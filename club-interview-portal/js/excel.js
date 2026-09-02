@@ -20,7 +20,7 @@ window.ExcelHelper = {
       'Ngày Phỏng Vấn',
       'Khung Giờ',
       'Hình Thức / Địa Điểm',
-      'Hội Đồng Phỏng Vấn',
+      'Người Phỏng Vấn',
       'Điểm Danh',
       'Kết Quả Tuyển',
       'Thời Gian Đăng Ký'

@@ -403,6 +403,23 @@ document.addEventListener('DOMContentLoaded', () => {
       showSuccessModal(result.candidate, result.registrations);
       window.UI.showToast('Đăng ký ca phỏng vấn thành công!', 'success');
 
+      // Tự động kích hoạt gửi Email xác nhận lịch phỏng vấn
+      if (window.EmailService) {
+        result.registrations.forEach(r => {
+          const slot = store.getSlotById(r.slotId);
+          const dept = store.getDepartmentById(r.departmentId);
+          window.EmailService.sendBookingConfirmationEmail({
+            recipientEmail: result.candidate.email,
+            candidateName: result.candidate.fullName,
+            bookingCode: r.bookingCode,
+            deptName: dept?.name,
+            slotTime: slot?.shiftLabel || `${slot?.startTime} - ${slot?.endTime}`,
+            slotDate: slot?.date,
+            location: slot?.type === 'online' ? 'Online Google Meet' : slot?.location
+          });
+        });
+      }
+
       // Reset Wizard
       document.getElementById('wizard-form')?.reset();
       wizardState.personalInfo = {};
@@ -493,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span>BẠN VUI LÒNG CHỜ & NHẮN TIN FANPAGE NHÉ:</span>
             </div>
             <p>
-              Hệ thống sẽ tự động đôn bạn lên khi có người đổi ca hoặc nhường chỗ. Để Ban Tổ Chức ghi nhận trường hợp đặc biệt của bạn, <strong>bạn vui lòng nhắn tin ngay cho Fanpage MCC.UEB</strong> kèm MSV: <strong>${candidate.studentId}</strong> nhé!
+              Hệ thống sẽ tự động đôn bạn lên khi có người đổi ca hoặc nhường chỗ. Để chúng mình ghi nhận trường hợp đặc biệt của bạn, <strong>bạn hãy nhắn tin ngay cho Fanpage MCC.UEB</strong> kèm MSV: <strong>${candidate.studentId}</strong> nhé!
             </p>
             <div class="pt-1">
               <a href="https://www.facebook.com/MCC.UEB" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all">
@@ -544,6 +561,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- CANDIDATE LOOKUP & EMAIL OTP FLOW ---
+  function maskEmail(email) {
+    if (!email || !email.includes('@')) return email;
+    const [user, domain] = email.split('@');
+    if (user.length <= 3) return `${user.slice(0, 1)}***@${domain}`;
+    return `${user.slice(0, 3)}***${user.slice(-2)}@${domain}`;
+  }
+
+  let resendTimer = null;
+  function startResendCountdown() {
+    let timeLeft = 60;
+    const resendBtn = document.getElementById('btn-resend-otp');
+    if (!resendBtn) return;
+
+    resendBtn.disabled = true;
+    resendBtn.innerHTML = `Gửi lại mã (<span id="resend-countdown">${timeLeft}s</span>)`;
+
+    if (resendTimer) clearInterval(resendTimer);
+    resendTimer = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        clearInterval(resendTimer);
+        resendBtn.disabled = false;
+        resendBtn.innerHTML = '🔄 Gửi lại mã OTP';
+      } else {
+        resendBtn.innerHTML = `Gửi lại mã (<span id="resend-countdown">${timeLeft}s</span>)`;
+      }
+    }, 1000);
+  }
+
   const formReqOtp = document.getElementById('form-request-otp');
   if (formReqOtp) {
     formReqOtp.addEventListener('submit', (e) => {
@@ -553,26 +599,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         const res = store.requestOtp(stId, email);
-        window.UI.showToast(res.message, 'success');
+
+        // Kích hoạt gửi Email OTP tự động tới hòm thư sinh viên
+        if (window.EmailService) {
+          window.EmailService.sendOtpEmail({
+            recipientEmail: res.email || email,
+            candidateName: res.candidate?.fullName,
+            studentId: res.candidate?.studentId || stId,
+            otpCode: res.previewOtp
+          });
+        }
+
+        window.UI.showToast(`Mã OTP đã được gửi đến email ${maskEmail(res.email || email)}!`, 'success');
 
         if (res.email) {
           document.getElementById('lookup-email').value = res.email;
         }
 
-        // Show Demo Hint for convenience
-        const hintEl = document.getElementById('otp-demo-hint');
-        if (hintEl) {
-          hintEl.innerHTML = `Mã OTP mô phỏng của bạn: <strong class="font-mono text-base text-orange-700 tracking-wider">${res.previewOtp}</strong> (Hiệu lực 10 phút)`;
+        // Cập nhật email bị ẩn bảo mật
+        const maskedEl = document.getElementById('otp-sent-masked-email');
+        if (maskedEl) {
+          maskedEl.textContent = maskEmail(res.email || email);
         }
 
+        // Xóa trống ô nhập để người dùng tự nhập mã OTP nhận được
         const otpInput = document.getElementById('lookup-otp-input');
         if (otpInput) {
-          otpInput.value = res.previewOtp || '';
+          otpInput.value = '';
         }
 
         document.getElementById('lookup-request-box').classList.add('hidden');
         document.getElementById('lookup-verify-box').classList.remove('hidden');
-        document.getElementById('lookup-otp-input').focus();
+        startResendCountdown();
+        otpInput?.focus();
 
       } catch (err) {
         window.UI.showToast(err.message, 'error');
@@ -580,7 +639,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Nút gửi lại mã OTP
+  document.getElementById('btn-resend-otp')?.addEventListener('click', () => {
+    const stId = document.getElementById('lookup-studentid').value.trim();
+    const email = document.getElementById('lookup-email').value.trim();
+    try {
+      const res = store.requestOtp(stId, email);
+      if (window.EmailService) {
+        window.EmailService.sendOtpEmail({
+          recipientEmail: res.email || email,
+          candidateName: res.candidate?.fullName,
+          studentId: res.candidate?.studentId || stId,
+          otpCode: res.previewOtp
+        });
+      }
+      window.UI.showToast('Đã gửi lại mã OTP thành công!', 'success');
+      startResendCountdown();
+      const otpInput = document.getElementById('lookup-otp-input');
+      if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+    } catch (err) {
+      window.UI.showToast(err.message, 'error');
+    }
+  });
+
   document.getElementById('btn-back-to-request-otp')?.addEventListener('click', () => {
+    if (resendTimer) clearInterval(resendTimer);
     document.getElementById('lookup-verify-box').classList.add('hidden');
     document.getElementById('lookup-request-box').classList.remove('hidden');
   });
@@ -592,11 +675,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const email = document.getElementById('lookup-email').value.trim();
       const otpCode = document.getElementById('lookup-otp-input').value.trim();
 
+      if (!otpCode || otpCode.length < 6) {
+        window.UI.showToast('Vui lòng nhập đủ 6 chữ số mã OTP.', 'warning');
+        return;
+      }
+
       try {
         const details = store.verifyOtp(email, otpCode);
         authenticatedCandidateData = details;
         window.UI.showToast('Xác thực OTP thành công!', 'success');
 
+        if (resendTimer) clearInterval(resendTimer);
         document.getElementById('lookup-verify-box').classList.add('hidden');
         renderCandidateSelfServiceDashboard();
 

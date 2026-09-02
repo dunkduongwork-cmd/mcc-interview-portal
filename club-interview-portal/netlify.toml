@@ -1,0 +1,10 @@
+[[redirects]]
+  from = "/"
+  to = "/club-interview-portal/index.html"
+  status = 302
+  force = false
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

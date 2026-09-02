@@ -158,7 +158,7 @@
           <div id="step-1-content" class="wizard-step-pane space-y-5">
             <div>
               <h3 class="text-lg font-black text-slate-900">Bước 1: Thông tin cá nhân</h3>
-              <p class="text-xs text-slate-500">Vui lòng điền chính xác thông tin để Hội đồng tuyển quân MCC.UEB liên hệ và sắp xếp ca phỏng vấn</p>
+              <p class="text-xs text-slate-500">Vui lòng điền chính xác thông tin để chúng mình liên hệ và sắp xếp ca phỏng vấn nhé</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -331,23 +331,40 @@
         </form>
       </div>
 
-      <!-- Step B: Enter OTP Box (Hidden initially) -->
-      <div id="lookup-verify-box" class="hidden bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 max-w-md mx-auto animate-fade-in">
-        <div class="text-center">
-          <h4 class="font-black text-slate-900 text-base">Nhập mã OTP 6 chữ số</h4>
-          <p class="text-xs text-slate-500 mt-1">Mã xác thực đã được gửi đến email của bạn</p>
-          <div id="otp-demo-hint" class="mt-2 p-2 rounded-xl bg-orange-50 text-orange-800 text-[11px] font-bold"></div>
+      <!-- Step B: Enter OTP Box (Real production-grade UI) -->
+      <div id="lookup-verify-box" class="hidden bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-md mx-auto animate-fade-in">
+        <div class="text-center space-y-2">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 text-xl font-bold mb-1">
+            📩
+          </div>
+          <h4 class="font-black text-slate-900 text-lg">Nhập mã OTP xác thực</h4>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Mã xác thực 6 chữ số đã được gửi tới:<br>
+            <strong id="otp-sent-masked-email" class="text-slate-800 font-bold font-mono text-xs">email@gmail.com</strong>
+          </p>
+          <p class="text-[11px] text-amber-800 bg-amber-50 rounded-xl p-2.5 border border-amber-200/80 leading-relaxed font-medium">
+            💡 <em>Vui lòng kiểm tra hộp thư đến hoặc mục <strong>Thư rác (Spam)</strong> trong Gmail nhé!</em>
+          </p>
         </div>
 
         <form id="form-verify-otp" class="space-y-4">
-          <input type="text" id="lookup-otp-input" maxlength="6" placeholder="123456" required
-            class="w-full px-4 py-3 text-center tracking-[0.5em] font-mono text-xl font-black rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
-          <button type="submit" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all">
-            ✓ Xác thực & mở lịch hẹn
+          <div>
+            <input type="text" id="lookup-otp-input" maxlength="6" placeholder="• • • • • •" autocomplete="one-time-code" required
+              class="w-full px-4 py-3.5 text-center tracking-[0.6em] font-mono text-2xl font-black rounded-2xl border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 outline-none transition-all placeholder:tracking-widest placeholder:text-slate-300">
+          </div>
+
+          <button type="submit" id="btn-submit-verify-otp" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2">
+            ✓ Xác thực & Mở lịch hẹn
           </button>
-          <button type="button" id="btn-back-to-request-otp" class="w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800">
-            ← Nhập lại email khác
-          </button>
+
+          <div class="flex items-center justify-between pt-2 text-xs font-semibold">
+            <button type="button" id="btn-back-to-request-otp" class="text-slate-500 hover:text-slate-800 transition-all">
+              ← Đổi email khác
+            </button>
+            <button type="button" id="btn-resend-otp" disabled class="text-orange-600 hover:text-orange-700 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              Gửi lại mã (<span id="resend-countdown">60s</span>)
+            </button>
+          </div>
         </form>
       </div>
 
@@ -951,6 +968,8 @@
   </footer>
 
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="js/email.js"></script>
   <script src="js/store.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/excel.js"></script>
