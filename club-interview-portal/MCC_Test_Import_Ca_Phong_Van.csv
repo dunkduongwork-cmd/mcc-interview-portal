@@ -1,0 +1,25 @@
+﻿DepartmentId,Date,StartTime,EndTime,Capacity,Location,Type,MeetUrl,Interviewers
+media,2026-09-05,08:00,10:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh
+media,2026-09-05,10:00,12:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh
+media,2026-09-05,14:00,16:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh
+media,2026-09-05,16:00,17:30,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh
+projects,2026-09-05,08:00,10:00,2,Phòng 502 - Nhà E4,offline,,Trịnh Hoài Nam;Nguyễn Lan Anh
+projects,2026-09-05,10:00,12:00,2,Phòng 502 - Nhà E4,offline,,Trịnh Hoài Nam;Nguyễn Lan Anh
+projects,2026-09-05,14:00,16:00,2,Online Google Meet,online,https://meet.google.com/mcc-duan-gen15,Trịnh Hoài Nam;Nguyễn Lan Anh
+projects,2026-09-05,16:00,17:30,2,Online Google Meet,online,https://meet.google.com/mcc-duan-gen15,Trịnh Hoài Nam;Nguyễn Lan Anh
+relations,2026-09-06,08:00,10:00,2,Phòng 503 - Nhà E4,offline,,Hoàng Phương Mai;Nguyễn Đức Anh
+relations,2026-09-06,10:00,12:00,2,Phòng 503 - Nhà E4,offline,,Hoàng Phương Mai;Nguyễn Đức Anh
+relations,2026-09-06,14:00,16:00,2,Phòng 503 - Nhà E4,offline,,Hoàng Phương Mai;Nguyễn Đức Anh
+relations,2026-09-06,16:00,17:30,2,Phòng 503 - Nhà E4,offline,,Hoàng Phương Mai;Nguyễn Đức Anh
+tech,2026-09-06,08:00,10:00,2,Phòng Studio E4,offline,,Đặng Quang Minh;Phạm Hải Nam
+tech,2026-09-06,10:00,12:00,2,Phòng Studio E4,offline,,Đặng Quang Minh;Phạm Hải Nam
+tech,2026-09-06,14:00,16:00,2,Phòng Studio E4,offline,,Đặng Quang Minh;Phạm Hải Nam
+tech,2026-09-06,16:00,17:30,2,Phòng Studio E4,offline,,Đặng Quang Minh;Phạm Hải Nam
+events,2026-09-07,08:00,10:00,2,Hội Trường 801 - E4,offline,,Vũ Minh Tuấn;Lê Thu Trang
+events,2026-09-07,10:00,12:00,2,Hội Trường 801 - E4,offline,,Vũ Minh Tuấn;Lê Thu Trang
+events,2026-09-07,14:00,16:00,2,Hội Trường 801 - E4,offline,,Vũ Minh Tuấn;Lê Thu Trang
+events,2026-09-07,16:00,17:30,2,Hội Trường 801 - E4,offline,,Vũ Minh Tuấn;Lê Thu Trang
+hr,2026-09-07,08:00,10:00,2,Phòng 504 - Nhà E4,offline,,Bùi Minh Đức;Đỗ Thùy Dương
+hr,2026-09-07,10:00,12:00,2,Phòng 504 - Nhà E4,offline,,Bùi Minh Đức;Đỗ Thùy Dương
+hr,2026-09-07,14:00,16:00,2,Phòng 504 - Nhà E4,offline,,Bùi Minh Đức;Đỗ Thùy Dương
+hr,2026-09-07,16:00,17:30,2,Phòng 504 - Nhà E4,offline,,Bùi Minh Đức;Đỗ Thùy Dương
