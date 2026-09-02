@@ -46,6 +46,10 @@ window.EmailService = {
       otp_code: otpCode,
       otp: otpCode,
       passcode: otpCode,
+      code: otpCode,
+      OTP: otpCode,
+      token: otpCode,
+      verify_code: otpCode,
       time: expireTime,
       club_name: EMAILJS_CONFIG.CLUB_NAME,
       sender_email: EMAILJS_CONFIG.CLUB_SENDER_EMAIL,
@@ -74,6 +78,12 @@ window.EmailService = {
    * Tự động gửi Email xác nhận đăng ký / đổi ca phỏng vấn thành công
    */
   async sendBookingConfirmationEmail({ recipientEmail, candidateName, bookingCode, deptName, slotTime, slotDate, location }) {
+    // Chỉ gửi khi có template xác nhận riêng (khác template OTP), tránh gửi nhầm nội dung OTP khi đăng ký ca
+    if (!EMAILJS_CONFIG.TEMPLATE_CONFIRM_ID || EMAILJS_CONFIG.TEMPLATE_CONFIRM_ID === EMAILJS_CONFIG.TEMPLATE_OTP_ID) {
+      console.log('ℹ️ Bỏ qua gửi email xác nhận vì chưa cấu hình template xác nhận riêng, tránh gửi nhầm template OTP.');
+      return { success: true, mode: 'skipped' };
+    }
+
     console.log(`📨 Đang gửi Email xác nhận lịch phỏng vấn tới: ${recipientEmail}`);
 
     const templateParams = {

@@ -491,6 +491,12 @@ class Store {
         if (doc.exists) {
           const cloudData = doc.data();
           if (cloudData && Array.isArray(cloudData.campaigns) && cloudData.campaigns.length > 0) {
+            // Tự động dọn dẹp các hồ sơ ứng viên mồ côi (không có đơn đăng ký nào)
+            if (Array.isArray(cloudData.candidates) && Array.isArray(cloudData.registrations)) {
+              cloudData.candidates = cloudData.candidates.filter(c =>
+                cloudData.registrations.some(r => r.candidateId === c.id && r.status !== 'cancelled')
+              );
+            }
             this.isSyncingFromCloud = true;
             this.data = cloudData;
             try {
@@ -546,6 +552,14 @@ class Store {
         if (hasDuplicates) {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch (e) {}
         }
+
+        // Tự động dọn dẹp các hồ sơ ứng viên mồ côi (không có đơn đăng ký nào)
+        if (Array.isArray(parsed.candidates) && Array.isArray(parsed.registrations)) {
+          parsed.candidates = parsed.candidates.filter(c =>
+            parsed.registrations.some(r => r.candidateId === c.id && r.status !== 'cancelled')
+          );
+        }
+
         return parsed;
       }
     } catch (e) {
@@ -944,14 +958,28 @@ class Store {
     const studentId = personalInfo.studentId.trim().toLowerCase();
     const email = personalInfo.email.trim().toLowerCase();
 
-    // Check existing candidate in current campaign
-    const existing = this.data.candidates.find(c =>
-      c.campaignId === camp.id &&
-      (c.studentId.trim().toLowerCase() === studentId || c.email.trim().toLowerCase() === email)
-    );
-    if (existing) {
-      throw new Error(`Mã sinh viên (MSV) hoặc Email này đã đăng ký trước đó. Vui lòng vào mục "Tra Cứu / Đổi Ca" để quản lý lịch hẹn.`);
+    // Kiểm tra xem MSV hoặc Email này đã có đơn đăng ký ĐANG HOẠT ĐỘNG trong mùa này chưa
+    const existingActiveReg = this.data.registrations.find(r => {
+      if (r.campaignId !== camp.id || r.status === 'cancelled') return false;
+      const c = this.data.candidates.find(cand => cand.id === r.candidateId);
+      if (!c) return false;
+      return (
+        c.studentId.trim().toLowerCase() === studentId ||
+        c.email.trim().toLowerCase() === email
+      );
+    });
+
+    if (existingActiveReg) {
+      throw new Error(`Mã sinh viên (MSV) hoặc Email này đã có ca đăng ký trước đó. Vui lòng vào mục "Tra Cứu / Đổi Ca" để quản lý lịch hẹn.`);
     }
+
+    // Dọn dẹp hồ sơ cũ nếu trước đó đơn đã bị xóa hoặc hủy
+    this.data.candidates = this.data.candidates.filter(c => {
+      if (c.campaignId !== camp.id) return true;
+      const isMatch = (c.studentId.trim().toLowerCase() === studentId || c.email.trim().toLowerCase() === email);
+      if (!isMatch) return true;
+      return this.data.registrations.some(r => r.candidateId === c.id && r.status !== 'cancelled');
+    });
 
     if (!dept1SlotId) {
       throw new Error('Vui lòng chọn ca phỏng vấn cho Ban thứ nhất.');
@@ -1210,26 +1238,37 @@ class Store {
   }
 
   cancelRegistration(registrationId, reason = '', isAdmin = false) {
-    const reg = this.data.registrations.find(r => r.id === registrationId);
-    if (!reg) throw new Error('Không tìm thấy thông tin đăng ký.');
+    const regIndex = this.data.registrations.findIndex(r => r.id === registrationId);
+    if (regIndex === -1) throw new Error('Không tìm thấy thông tin đăng ký.');
 
+    const reg = this.data.registrations[regIndex];
     const camp = this.getActiveCampaign();
     if (!isAdmin && this.isPastDeadline(camp.id)) {
       throw new Error('Đã quá thời hạn hủy ca phỏng vấn. Vui lòng liên hệ Ban Tuyển Quân để báo vắng.');
     }
 
     const oldSlotId = reg.slotId;
-    reg.status = 'cancelled';
-    reg.cancelledAt = new Date().toISOString();
+    const cand = this.data.candidates.find(c => c.id === reg.candidateId);
+
+    // Xóa hoàn toàn đơn đăng ký khỏi danh sách
+    this.data.registrations.splice(regIndex, 1);
+
+    // Nếu ứng viên không còn đơn nào khác, xóa luôn khỏi danh sách ứng viên
+    const hasOtherRegs = this.data.registrations.some(r => r.candidateId === reg.candidateId && r.status !== 'cancelled');
+    if (!hasOtherRegs) {
+      this.data.candidates = this.data.candidates.filter(c => c.id !== reg.candidateId);
+    }
 
     if (isAdmin) {
-      this.logAudit('Admin', 'ADMIN_CANCEL', 'Registration', registrationId, { status: 'confirmed' }, { status: 'cancelled' }, reason || 'Admin hủy ca đăng ký');
+      this.logAudit('Admin', 'ADMIN_DELETE_REG', 'Registration', registrationId, { bookingCode: reg.bookingCode }, null, reason || `Admin đã xóa vĩnh viễn đơn đăng ký của ${cand?.fullName || ''}`);
     }
 
     this.saveData();
 
     // Auto promote any waitlist candidate in the freed slot
-    this.autoPromoteWaitlist(oldSlotId);
+    if (oldSlotId) {
+      this.autoPromoteWaitlist(oldSlotId);
+    }
 
     return reg;
   }

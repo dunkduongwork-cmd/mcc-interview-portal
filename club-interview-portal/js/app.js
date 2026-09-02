@@ -636,6 +636,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 
+  // Chặn Enter tự động submit khi đang nhập dở MSV
+  document.getElementById('lookup-studentid')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('lookup-email')?.focus();
+    }
+  });
+
   const formReqOtp = document.getElementById('form-request-otp');
   if (formReqOtp) {
     formReqOtp.addEventListener('submit', (e) => {
@@ -780,7 +788,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('lookup-dashboard').classList.remove('hidden');
   }
 
+  let currentCandidateRescheduleReg = null;
+  let selectedNewSlotIdForCandidate = null;
+
   function openCandidateRescheduleModal(reg) {
+    currentCandidateRescheduleReg = reg;
+    selectedNewSlotIdForCandidate = null;
+
+    const modal = document.getElementById('modal-candidate-reschedule');
+    if (!modal) return;
+
+    const dept = reg.dept || store.getDepartmentById(reg.departmentId);
+    const curSlot = reg.slot || store.getSlotById(reg.slotId);
+
+    document.getElementById('reschedule-modal-dept-title').textContent = dept?.name || 'Ban Ứng Tuyển';
+    document.getElementById('reschedule-modal-current-slot').textContent = curSlot
+      ? `${curSlot.shiftLabel || `${curSlot.startTime} - ${curSlot.endTime}`} (Ngày ${curSlot.date})`
+      : 'Chưa xác định';
+
     const activeCamp = store.getActiveCampaign();
     const availableSlots = store.getSlots(activeCamp.id).filter(s =>
       s.departmentId === reg.departmentId &&
@@ -789,35 +814,96 @@ document.addEventListener('DOMContentLoaded', () => {
       !s.isFull
     );
 
+    const slotsListEl = document.getElementById('reschedule-slots-list');
+    const confirmBtn = document.getElementById('btn-confirm-candidate-reschedule');
+    slotsListEl.innerHTML = '';
+    confirmBtn.disabled = true;
+
     if (availableSlots.length === 0) {
-      window.UI.showToast('Không còn ca phỏng vấn nào khác còn chỗ trống cho ban này.', 'warning');
+      slotsListEl.innerHTML = `
+        <div class="p-6 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+          <span class="text-2xl block mb-2">⚠️</span>
+          <p class="font-bold text-slate-700">Rất tiếc, các ca phỏng vấn khác của ban này đã kín chỗ.</p>
+          <p class="text-[11px] text-slate-400">Vui lòng liên hệ Hotline Ban Tuyển Quân để được hỗ trợ đặc biệt.</p>
+        </div>
+      `;
+      modal.classList.remove('hidden');
       return;
     }
 
-    const slotNames = availableSlots.map((s, idx) => {
+    availableSlots.forEach((s, idx) => {
       const [yy, mm, dd] = s.date.split('-');
-      return `${idx + 1}. Ngày ${dd}/${mm} (${s.startTime} - ${s.endTime}) - ${s.type === 'online' ? 'Online' : s.location} [Còn ${s.remainingCount} chỗ]`;
-    }).join('\n');
+      const card = document.createElement('div');
+      card.className = 'reschedule-slot-card p-3.5 rounded-2xl border-2 border-slate-200 hover:border-[#8B1E22]/60 bg-white hover:bg-red-50/20 transition-all cursor-pointer flex items-center justify-between gap-3';
+      card.dataset.slotId = s.id;
 
-    const promptChoice = prompt(`Chọn số thứ tự ca phỏng vấn bạn muốn đổi sang:\n\n${slotNames}\n\nNhập số:`);
-    if (!promptChoice) return;
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0">
+            ${idx + 1}
+          </div>
+          <div>
+            <div class="font-bold text-slate-900 text-xs">
+              ${s.shiftLabel ? `${s.shiftLabel} (${s.startTime} - ${s.endTime})` : `${s.startTime} - ${s.endTime}`} • Ngày ${dd}/${mm}/${yy}
+            </div>
+            <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+              <span>${s.type === 'online' ? '🌐 Google Meet Online' : '📍 ' + s.location}</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Còn ${s.remainingCount} chỗ
+          </span>
+          <div class="selection-circle w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center text-white text-[10px] font-black transition-all"></div>
+        </div>
+      `;
 
-    const chosenIdx = Number(promptChoice) - 1;
-    if (isNaN(chosenIdx) || !availableSlots[chosenIdx]) {
-      window.UI.showToast('Lựa chọn không hợp lệ.', 'error');
-      return;
-    }
+      card.addEventListener('click', () => {
+        selectedNewSlotIdForCandidate = s.id;
+        document.querySelectorAll('.reschedule-slot-card').forEach(c => {
+          c.classList.remove('border-[#8B1E22]', 'bg-red-50/30', 'shadow-xs');
+          c.classList.add('border-slate-200');
+          const circle = c.querySelector('.selection-circle');
+          if (circle) {
+            circle.className = 'selection-circle w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center text-white text-[10px] font-black transition-all';
+            circle.textContent = '';
+          }
+        });
 
-    const newSlot = availableSlots[chosenIdx];
+        card.classList.remove('border-slate-200');
+        card.classList.add('border-[#8B1E22]', 'bg-red-50/30', 'shadow-xs');
+        const circle = card.querySelector('.selection-circle');
+        if (circle) {
+          circle.className = 'selection-circle w-5 h-5 rounded-full border-2 border-[#8B1E22] bg-[#8B1E22] flex items-center justify-center text-white text-[10px] font-black transition-all';
+          circle.textContent = '✓';
+        }
+
+        confirmBtn.disabled = false;
+      });
+
+      slotsListEl.appendChild(card);
+    });
+
+    modal.classList.remove('hidden');
+  }
+
+  document.getElementById('btn-confirm-candidate-reschedule')?.addEventListener('click', () => {
+    if (!currentCandidateRescheduleReg || !selectedNewSlotIdForCandidate) return;
+
     try {
-      store.rescheduleRegistration(reg.id, newSlot.id, 'Ứng viên tự đổi ca qua OTP');
-      window.UI.showToast('Đã đổi ca phỏng vấn thành công!', 'success');
-      authenticatedCandidateData = store.getCandidateFullDetails(authenticatedCandidateData.candidate.id);
-      renderCandidateSelfServiceDashboard();
+      store.rescheduleRegistration(currentCandidateRescheduleReg.id, selectedNewSlotIdForCandidate, 'Ứng viên tự đổi ca qua cổng tra cứu');
+      window.UI.showToast('Chúc mừng bạn đã đổi ca phỏng vấn thành công!', 'success');
+      document.getElementById('modal-candidate-reschedule')?.classList.add('hidden');
+
+      if (authenticatedCandidateData) {
+        authenticatedCandidateData = store.getCandidateFullDetails(authenticatedCandidateData.candidate.id);
+        renderCandidateSelfServiceDashboard();
+      }
     } catch (err) {
       window.UI.showToast(err.message, 'error');
     }
-  }
+  });
 
   document.getElementById('btn-logout-candidate')?.addEventListener('click', () => {
     authenticatedCandidateData = null;
@@ -1770,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const allRegs = store.data.registrations
-      .filter(r => r.campaignId === activeCamp.id && (!isDeptLead || r.departmentId === myDeptId) && (r.status === 'confirmed' || r.status === 'waitlist'))
+      .filter(r => r.campaignId === activeCamp.id && (!isDeptLead || r.departmentId === myDeptId) && r.status !== 'cancelled')
       .map(r => ({
         ...r,
         candidate: store.data.candidates.find(c => c.id === r.candidateId),
@@ -1800,35 +1886,54 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(r => {
       const cand = r.candidate || {};
       const slot = r.slot;
+      const isCancelled = (r.status === 'cancelled');
+      const isWaitlist = (r.status === 'waitlist');
       const tr = document.createElement('tr');
-      tr.className = 'border-b border-slate-100 hover:bg-slate-50';
+      tr.className = `border-b border-slate-100 hover:bg-slate-50 transition-colors ${isCancelled ? 'bg-slate-50/60' : ''}`;
+
+      let statusBadge = '';
+      if (isCancelled) {
+        statusBadge = `
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1 w-fit">
+            <span>❌</span>
+            <span>Đã hủy ca</span>
+          </span>
+        `;
+      } else if (isWaitlist) {
+        statusBadge = `
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1 w-fit animate-pulse">
+            <span>⏳</span>
+            <span>Hàng chờ (Waitlist)</span>
+          </span>
+        `;
+      } else {
+        statusBadge = `
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold inline-block w-fit ${
+            r.checkInStatus === 'checked-in' ? 'bg-emerald-100 text-emerald-800' : r.checkInStatus === 'absent' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-600'
+          }">
+            ${r.checkInStatus === 'checked-in' ? 'Đã đến' : r.checkInStatus === 'absent' ? 'Vắng mặt' : 'Chờ đến'}
+          </span>
+        `;
+      }
 
       tr.innerHTML = `
-        <td class="px-4 py-3 font-mono font-black text-orange-700">${r.bookingCode}</td>
+        <td class="px-4 py-3 font-mono font-black ${isCancelled ? 'text-slate-400' : 'text-[#8B1E22]'}">${r.bookingCode}</td>
         <td class="px-4 py-3">
-          <div class="font-bold text-slate-900">${cand.fullName || 'N/A'}</div>
+          <div class="font-bold text-slate-900 ${isCancelled ? 'line-through text-slate-500' : ''}">${cand.fullName || 'N/A'}</div>
           <div class="text-[11px] text-slate-500">MSV: ${cand.studentId} • ${cand.academicClass || ''}</div>
         </td>
-        <td class="px-4 py-3 font-bold text-slate-700">${r.dept?.name}</td>
-        <td class="px-4 py-3 font-medium">${slot?.shiftLabel ? `${slot.shiftLabel} (${slot.date})` : `${slot?.startTime} - ${slot?.endTime} (${slot?.date})`}</td>
+        <td class="px-4 py-3 font-bold text-slate-700">${r.dept?.name || ''}</td>
+        <td class="px-4 py-3 font-medium ${isCancelled ? 'line-through text-slate-400' : ''}">
+          ${slot ? (slot.shiftLabel ? `${slot.shiftLabel} (${slot.date})` : `${slot.startTime} - ${slot.endTime} (${slot.date})`) : '<span class="text-slate-400 italic font-normal">Chưa có ca (Đã hủy)</span>'}
+        </td>
         <td class="px-4 py-3">
           <div class="flex flex-col gap-1">
-            ${r.status === 'waitlist' ? `
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-block w-fit animate-pulse">
-                ⏳ Hàng chờ (Waitlist)
-              </span>
-            ` : `
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-block w-fit ${
-                r.checkInStatus === 'checked-in' ? 'bg-emerald-100 text-emerald-800' : r.checkInStatus === 'absent' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-600'
-              }">
-                ${r.checkInStatus === 'checked-in' ? 'Đã đến' : r.checkInStatus === 'absent' ? 'Vắng mặt' : 'Chờ đến'}
-              </span>
-            `}
+            ${statusBadge}
           </div>
         </td>
         <td class="px-4 py-3 text-right">
-          <button class="btn-open-override px-2.5 py-1 rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white font-bold transition-all">
-            ⚙️ Can thiệp
+          <button class="btn-open-override px-2.5 py-1 rounded-xl ${isCancelled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-red-50 text-[#8B1E22] hover:bg-[#8B1E22] hover:text-white'} font-bold transition-all text-xs cursor-pointer">
+            ${isCancelled ? '🔄 Đặt lại ca' : '⚙️ Can thiệp'}
           </button>
         </td>
       `;
@@ -1853,7 +1958,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('override-name').textContent = cand.fullName || '';
     document.getElementById('override-mssv').textContent = cand.studentId || '';
     document.getElementById('override-dept').textContent = reg.dept?.name || '';
-    document.getElementById('override-current-slot').textContent = `${slot?.startTime}-${slot?.endTime} (${slot?.date})`;
+    document.getElementById('override-current-slot').textContent = slot ? `${slot.startTime}-${slot.endTime} (${slot.date})` : 'Chưa có ca (Đơn này đã hủy)';
+
+    // Ẩn nút hủy nếu đơn đã ở trạng thái hủy rồi
+    const cancelBtn = document.getElementById('btn-override-cancel-reg');
+    if (cancelBtn) {
+      if (reg.status === 'cancelled') {
+        cancelBtn.classList.add('hidden');
+      } else {
+        cancelBtn.classList.remove('hidden');
+      }
+    }
 
     const activeCamp = store.getActiveCampaign();
     const availableSlots = store.getSlots(activeCamp.id).filter(s =>
@@ -1898,16 +2013,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-override-cancel-reg')?.addEventListener('click', () => {
     if (!currentOverrideReg) return;
-    const reason = document.getElementById('override-reason').value.trim();
-    if (!reason) {
-      window.UI.showToast('Vui lòng nhập lý do hủy ca vào ô lý do bên dưới.', 'warning');
-      return;
-    }
+    const reason = (document.getElementById('override-reason')?.value || '').trim() || 'Admin xóa đơn đăng ký';
+    const candName = currentOverrideReg.candidate?.fullName || 'ứng viên này';
 
-    if (confirm(`Bạn có chắc muốn hủy ca đăng ký này của [${currentOverrideReg.candidate?.fullName}]?`)) {
+    if (confirm(`Bạn có chắc chắn muốn XÓA HOÀN TOÀN đơn đăng ký của [${candName}] khỏi danh sách không?`)) {
       try {
         store.cancelRegistration(currentOverrideReg.id, reason, true);
-        window.UI.showToast('Đã hủy đăng ký ca thành công!', 'info');
+        window.UI.showToast(`Đã xóa thành công đơn đăng ký của ${candName}!`, 'success');
         document.getElementById('modal-admin-override')?.classList.add('hidden');
         renderAdminWorkspace();
       } catch (err) {

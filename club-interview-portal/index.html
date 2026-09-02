@@ -85,7 +85,7 @@
 
           <button id="nav-btn-admin" data-route="admin" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 border border-slate-200 cursor-pointer">
             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            <span>Admin 🔒</span>
+            <span>Admin</span>
           </button>
         </nav>
 
@@ -473,7 +473,6 @@
         <div class="text-center space-y-2">
           <img src="images/mcc-logo.png" alt="MCC Logo" class="w-16 h-16 object-contain mx-auto">
           <h3 class="text-2xl font-black text-slate-900">Admin Portal</h3>
-          <p class="text-xs text-slate-500">Đăng nhập tài khoản quản trị viên tuyển quân</p>
         </div>
 
         <form id="form-admin-login" class="space-y-4 text-xs">
@@ -1030,14 +1029,14 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1.5">Lý Do Can Thiệp (Bắt buộc để lưu lịch sử hoạt động) *:</label>
-          <textarea id="override-reason" rows="2" placeholder="Ví dụ: Ứng viên gọi hotline xin đổi ca do trùng lịch thi..." required
-            class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none"></textarea>
+          <label class="block font-bold text-slate-700 mb-1.5">Lý Do Can Thiệp (tùy chọn để lưu lịch sử):</label>
+          <textarea id="override-reason" rows="2" placeholder="Ví dụ: Ứng viên gọi hotline xin đổi ca do trùng lịch thi, xin hủy ca..."
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none text-xs"></textarea>
         </div>
 
         <div class="pt-3 flex justify-between items-center border-t border-slate-100">
           <button type="button" id="btn-override-cancel-reg" class="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-xl font-bold transition-all cursor-pointer">
-            Hủy Đăng Ký Này
+            🗑️ Xóa Khỏi Danh Sách
           </button>
           <div class="flex gap-2">
             <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl cursor-pointer">Đóng</button>
@@ -1045,6 +1044,52 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 4B. Candidate Reschedule Modal (Giao diện đổi ca trực quan) -->
+  <div id="modal-candidate-reschedule" class="modal-backdrop fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 animate-fade-in text-xs border border-slate-200 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center text-lg font-bold border border-amber-200/80">
+            🔄
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Đổi Ca Phỏng Vấn</h3>
+            <p id="reschedule-modal-dept-title" class="text-xs text-[#8B1E22] font-bold">Ban Ứng Tuyển</p>
+          </div>
+        </div>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
+      </div>
+
+      <!-- Current Slot Box -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+        <div>
+          <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">Ca đang đăng ký hiện tại:</span>
+          <span id="reschedule-modal-current-slot" class="text-xs font-bold text-slate-800">08:00 - 10:00 (Ngày 05/09/2026)</span>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Ca hiện tại</span>
+      </div>
+
+      <!-- Available Slots Selection List -->
+      <div class="space-y-2">
+        <label class="block font-bold text-slate-700">Chọn 1 ca phỏng vấn mới bạn muốn chuyển sang:</label>
+        <div id="reschedule-slots-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+          <!-- Dynamically populated slot cards -->
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="pt-3 flex justify-end items-center gap-2.5 border-t border-slate-100">
+        <button type="button" class="close-modal-btn px-4 py-2.5 text-slate-600 hover:bg-slate-100 font-bold rounded-xl transition-all cursor-pointer">
+          Hủy bỏ
+        </button>
+        <button type="button" id="btn-confirm-candidate-reschedule" disabled
+          class="px-6 py-2.5 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+          <span>✓ Xác Nhận Đổi Ca</span>
+        </button>
+      </div>
     </div>
   </div>
 
