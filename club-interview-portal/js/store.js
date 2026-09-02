@@ -1347,7 +1347,52 @@ const INITIAL_ADMINS = [
 
 // Extend Store with Admin Authentication methods
 Store.prototype.getAdmins = function() {
-  return INITIAL_ADMINS;
+  if (!this.data.admins || !Array.isArray(this.data.admins) || this.data.admins.length === 0) {
+    this.data.admins = JSON.parse(JSON.stringify(INITIAL_ADMINS));
+    this.saveData();
+  }
+  return this.data.admins;
+};
+
+Store.prototype.updateAdminProfile = function(adminId, { fullName, currentPassword, newPassword }) {
+  const admins = this.getAdmins();
+  const admin = admins.find(a => a.id === adminId);
+  if (!admin) {
+    throw new Error('Không tìm thấy tài khoản quản trị.');
+  }
+
+  // Đổi mật khẩu nếu có nhập mật khẩu mới
+  if (newPassword && newPassword.trim()) {
+    if (!currentPassword || currentPassword.trim() !== admin.password) {
+      throw new Error('Mật khẩu hiện tại không chính xác.');
+    }
+    if (newPassword.trim().length < 4) {
+      throw new Error('Mật khẩu mới phải có tối thiểu 4 ký tự.');
+    }
+    admin.password = newPassword.trim();
+  }
+
+  // Đổi tên hiển thị
+  if (fullName && fullName.trim()) {
+    admin.fullName = fullName.trim();
+  }
+
+  this.saveData();
+
+  // Đồng bộ lại session hiện tại
+  const session = this.getCurrentAdmin();
+  if (session && session.id === admin.id) {
+    session.fullName = admin.fullName;
+    sessionStorage.setItem('MCC_ADMIN_SESSION', JSON.stringify(session));
+  }
+
+  this.logAudit(admin.fullName, 'UPDATE_PROFILE', 'Admin', admin.id, null, {
+    fullName: admin.fullName,
+    passwordChanged: Boolean(newPassword && newPassword.trim())
+  }, 'Cập nhật tên hiển thị / mật khẩu tài khoản');
+
+  this.saveData();
+  return admin;
 };
 
 Store.prototype.authenticateAdmin = function(username, password) {
@@ -1381,7 +1426,7 @@ Store.prototype.getCurrentAdmin = function() {
     const s = sessionStorage.getItem('MCC_ADMIN_SESSION');
     if (!s) return null;
     const session = JSON.parse(s);
-    // Always sync fresh role and fullName from INITIAL_ADMINS to immediately clear old cache
+    // Always sync fresh role and fullName from persistent admins data
     const fresh = this.getAdmins().find(a => a.id === session.id);
     if (fresh) {
       session.fullName = fresh.fullName;

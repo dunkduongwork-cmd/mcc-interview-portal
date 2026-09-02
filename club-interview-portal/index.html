@@ -55,12 +55,12 @@
         <nav class="flex items-center gap-1 sm:gap-2">
           <button data-route="candidate" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-orange-50 text-orange-600 flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            <span class="hidden sm:inline">Đăng ký ca</span><span class="sm:hidden">Đăng ký</span>
+            <span class="hidden sm:inline">Đăng ký ca phỏng vấn</span><span class="sm:hidden">Đăng ký</span>
           </button>
           
           <button data-route="lookup" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <span class="hidden sm:inline">Tra cứu & đổi ca (OTP)</span><span class="sm:hidden">Tra cứu</span>
+            <span class="hidden sm:inline">Tra cứu & đổi ca</span><span class="sm:hidden">Tra cứu</span>
           </button>
 
           <button data-route="admin" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-1.5 border border-slate-200">
@@ -308,8 +308,8 @@
         <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 mb-2">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
         </div>
-        <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Tra cứu / đổi / hủy ca phỏng vấn (xác thực OTP)</h2>
-        <p class="text-xs sm:text-sm text-slate-500">Nhập mã sinh viên (MSV) và Email đã đăng ký để nhận mã OTP xác thực bảo mật</p>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Tra cứu / đổi / hủy ca phỏng vấn</h2>
+        <p class="text-xs sm:text-sm text-slate-500">Nhập mã sinh viên (MSV) và Email đã đăng ký để kiểm tra và quản lý lịch hẹn của bạn</p>
       </div>
 
       <!-- Step A: Request OTP Box -->
@@ -433,26 +433,31 @@
           <!-- LEFT SIDEBAR NAVIGATION -->
           <aside class="w-full lg:w-72 shrink-0 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 space-y-4 lg:sticky lg:top-20">
             <!-- Admin User Profile Info Card -->
-            <div class="flex items-center gap-3 p-3 rounded-2xl bg-orange-50/70 border border-orange-200/80">
-              <span id="admin-profile-avatar" class="text-2xl">👑</span>
+            <div class="flex items-center gap-3 p-3 rounded-2xl bg-orange-50/70 border border-orange-200/80 hover:bg-orange-100/60 transition-all cursor-pointer" onclick="window.__openAdminProfileModal(event)" title="Bấm để Đổi tên & Mật khẩu tài khoản">
+              <span id="admin-profile-avatar" class="text-2xl select-none">👑</span>
               <div class="min-w-0 flex-1">
                 <div id="admin-profile-name" class="font-black text-slate-900 text-xs truncate">Admin</div>
                 <div id="admin-profile-role" class="text-[10px] text-orange-700 font-semibold truncate">Chủ Nhiệm</div>
               </div>
-              <button id="btn-admin-logout" title="Đăng xuất" class="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-all text-xs">
-                🚪
-              </button>
+              <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+                <button type="button" onclick="window.__openAdminProfileModal(event)" id="btn-open-admin-profile-modal" title="Cài đặt tài khoản & Đổi mật khẩu" class="p-1.5 rounded-xl bg-white hover:bg-orange-200 text-orange-700 border border-orange-300 font-bold transition-all text-xs cursor-pointer shadow-sm">
+                  ⚙️
+                </button>
+                <button type="button" id="btn-admin-logout" title="Đăng xuất" class="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-all text-xs cursor-pointer shadow-sm">
+                  🚪
+                </button>
+              </div>
             </div>
 
             <!-- Navigation Menu Tabs -->
             <nav class="space-y-1 text-xs font-bold" id="admin-sidebar-nav">
               <!-- 1. Slots Management (Quản lý lịch phỏng vấn) -->
-              <button type="button" data-admin-tab="slots" id="nav-tab-slots" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-slate-900 text-white shadow-md whitespace-nowrap">
+              <button type="button" data-admin-tab="slots" id="nav-tab-slots" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 whitespace-nowrap">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="text-base shrink-0">📅</span>
                   <span class="truncate">Quản lý lịch phỏng vấn</span>
                 </div>
-                <span id="badge-tab-slots-count" class="shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-200 ml-1">0 ca</span>
+                <span id="badge-tab-slots-count" class="shrink-0 px-2 py-0.5 text-[10px] font-black rounded-full bg-white/25 text-white ml-1">0 ca</span>
               </button>
 
               <!-- 2. Candidate Directory (Ca ứng viên đăng ký) -->
@@ -480,6 +485,14 @@
                 </div>
               </button>
             </nav>
+
+            <!-- Create Campaign Button (Bottom of Sidebar) -->
+            <div class="pt-3 border-t border-slate-100" id="sidebar-create-campaign-container">
+              <button type="button" id="btn-open-new-campaign-modal" class="w-full px-3.5 py-2.5 text-xs font-bold rounded-2xl bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white transition-all flex items-center justify-center gap-2 border border-orange-200 shadow-sm cursor-pointer">
+                <span>🌟</span>
+                <span>Tạo đợt tuyển mới</span>
+              </button>
+            </div>
           </aside>
 
           <!-- RIGHT MAIN CONTENT PANE -->
@@ -498,25 +511,30 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Action Buttons (Scoped with RBAC) -->
-              <div class="flex flex-wrap items-center gap-2">
-                <button id="btn-open-new-campaign-modal" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white transition-all flex items-center gap-1.5 border border-orange-200">
-                  🌟 Tạo đợt tuyển
-                </button>
-                <button id="btn-open-import-modal" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all flex items-center gap-1.5">
-                  📥 Nhập CSV
-                </button>
-                <button id="btn-admin-export-excel" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5">
-                  📊 Xuất Excel
-                </button>
-              </div>
             </div>
-
-
 
             <!-- PANE 2: TAB SLOTS MANAGEMENT -->
             <div id="admin-pane-slots" class="admin-tab-pane hidden space-y-6 animate-fade-in">
+              <!-- DEADLINE SETTINGS BANNER (Exclusive for Ban Chủ Nhiệm inside Slots Management) -->
+              <div id="admin-deadline-card-box" class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl border border-amber-200/80 p-5 shadow-sm space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center gap-2.5">
+                    <span class="p-2 rounded-2xl bg-amber-500 text-white text-base">⏰</span>
+                    <div>
+                      <h3 class="font-black text-slate-900 text-sm">Deadline ứng viên đăng ký & đổi ca</h3>
+                      <p class="text-xs text-slate-600 font-medium">Sau thời điểm này, toàn bộ ứng viên sẽ bị khóa tính năng chọn ca và đổi ca.</p>
+                    </div>
+                  </div>
+                  <form id="form-update-deadline" class="flex items-center gap-2">
+                    <input type="datetime-local" id="admin-deadline-input" required
+                      class="px-3.5 py-2 rounded-xl border border-amber-300 bg-white font-bold text-xs outline-none focus:ring-2 focus:ring-orange-500">
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs shadow-md transition-all whitespace-nowrap cursor-pointer">
+                      💾 Lưu
+                    </button>
+                  </form>
+                </div>
+              </div>
+
               <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
@@ -525,6 +543,11 @@
                   </div>
                   
                   <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="btn-open-import-modal" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                      <span>📥</span>
+                      <span>Nhập CSV</span>
+                    </button>
+
                     <select id="admin-filter-slot-dept" class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none">
                       <option value="all">Tất cả các ban</option>
                     </select>
@@ -944,6 +967,85 @@
           Đóng Cửa Sổ
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 7. Admin Profile Settings Modal (Đổi tên & Mật khẩu) -->
+  <div id="modal-admin-profile" class="modal-backdrop fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-fade-in text-xs border border-orange-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2 rounded-2xl bg-orange-100 text-orange-700 text-base">⚙️</span>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Cài Đặt Tài Khoản Quản Trị</h3>
+            <p class="text-xs text-slate-500 font-medium">Đổi tên hiển thị và mật khẩu đăng nhập</p>
+          </div>
+        </div>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <form id="form-update-admin-profile" class="space-y-4">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tài khoản đăng nhập (Email)</label>
+          <input type="text" id="profile-admin-username" readonly disabled
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-mono font-bold cursor-not-allowed">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Vai trò & Phân quyền</label>
+          <input type="text" id="profile-admin-role" readonly disabled
+            class="w-full px-3.5 py-2.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-800 font-bold cursor-not-allowed">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Họ và tên hiển thị *</label>
+          <input type="text" id="profile-admin-fullname" required placeholder="Nguyễn Văn A"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none font-bold">
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-slate-900">Đổi Mật Khẩu (Tùy chọn)</span>
+            <span class="text-[10px] text-slate-400">Để trống nếu chỉ đổi tên</span>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Mật khẩu hiện tại</label>
+            <div class="relative">
+              <input type="password" id="profile-admin-curr-pass" placeholder="••••••••"
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs" data-target="profile-admin-curr-pass">👁️</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Mật khẩu mới</label>
+            <div class="relative">
+              <input type="password" id="profile-admin-new-pass" placeholder="Tối thiểu 4 ký tự"
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs" data-target="profile-admin-new-pass">👁️</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Xác nhận mật khẩu mới</label>
+            <div class="relative">
+              <input type="password" id="profile-admin-confirm-pass" placeholder="Nhập lại mật khẩu mới"
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs" data-target="profile-admin-confirm-pass">👁️</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold">
+            Hủy
+          </button>
+          <button type="submit" class="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl shadow-lg shadow-orange-600/30 transition-all flex items-center gap-1.5">
+            💾 Lưu Thay Đổi
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

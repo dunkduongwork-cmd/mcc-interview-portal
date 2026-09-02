@@ -1112,6 +1112,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nameEl) nameEl.textContent = currentAdmin.fullName;
     if (roleEl) roleEl.textContent = currentAdmin.role;
 
+    // Profile Settings Button
+    const profileBtn = document.getElementById('btn-open-admin-profile-modal');
+    if (profileBtn) {
+      profileBtn.onclick = (e) => {
+        if (e) e.preventDefault();
+        const cur = store.getCurrentAdmin();
+        if (!cur) return;
+        document.getElementById('profile-admin-username').value = cur.username;
+        document.getElementById('profile-admin-role').value = `${cur.role} ${cur.deptId && cur.deptId !== 'all' ? `(${store.getDepartmentById(cur.deptId)?.name || cur.deptId})` : ''}`;
+        document.getElementById('profile-admin-fullname').value = cur.fullName || '';
+        document.getElementById('profile-admin-curr-pass').value = '';
+        document.getElementById('profile-admin-new-pass').value = '';
+        document.getElementById('profile-admin-confirm-pass').value = '';
+        document.getElementById('modal-admin-profile')?.classList.remove('hidden');
+        document.getElementById('profile-admin-fullname')?.focus();
+      };
+    }
+
     // Logout Button
     const logoutBtn = document.getElementById('btn-admin-logout');
     if (logoutBtn) {
@@ -1285,10 +1303,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const badge = btn.querySelector('span[id^="badge-tab-"]');
       if (bTab === tabId) {
-        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-slate-900 text-white shadow-md font-bold whitespace-nowrap';
+        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 font-bold whitespace-nowrap';
+        if (badge) badge.className = 'shrink-0 px-2 py-0.5 text-[10px] font-black rounded-full bg-white/25 text-white ml-1';
       } else {
-        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 font-bold whitespace-nowrap';
+        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-orange-50 hover:text-orange-700 font-bold whitespace-nowrap';
+        if (badge) badge.className = 'shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 ml-1';
       }
     });
 
@@ -1982,6 +2003,105 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.ExcelHelper.exportCandidatesToCsv(mapped, activeCamp);
     window.UI.showToast(`Đã xuất file báo cáo ${isDeptLead ? 'ban của bạn' : 'toàn bộ 6 ban'} thành công!`, 'success');
+  });
+
+  // --- ADMIN PROFILE SETTINGS & CHANGE PASSWORD ---
+  window.__openAdminProfileModal = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const current = store.getCurrentAdmin();
+    if (!current) {
+      window.UI.showToast('Vui lòng đăng nhập vào tài khoản quản trị trước.', 'warning');
+      return;
+    }
+
+    const usernameEl = document.getElementById('profile-admin-username');
+    const roleEl = document.getElementById('profile-admin-role');
+    const nameEl = document.getElementById('profile-admin-fullname');
+    if (usernameEl) usernameEl.value = current.username || '';
+    if (roleEl) roleEl.value = `${current.role || ''} ${current.deptId && current.deptId !== 'all' ? `(${store.getDepartmentById(current.deptId)?.name || current.deptId})` : ''}`;
+    if (nameEl) nameEl.value = current.fullName || '';
+    
+    // Clear password fields
+    const currP = document.getElementById('profile-admin-curr-pass');
+    const newP = document.getElementById('profile-admin-new-pass');
+    const confP = document.getElementById('profile-admin-confirm-pass');
+    if (currP) currP.value = '';
+    if (newP) newP.value = '';
+    if (confP) confP.value = '';
+
+    const modal = document.getElementById('modal-admin-profile');
+    if (modal) {
+      modal.classList.remove('hidden');
+      setTimeout(() => { nameEl?.focus(); }, 50);
+    }
+  };
+
+  document.getElementById('btn-open-admin-profile-modal')?.addEventListener('click', window.__openAdminProfileModal);
+
+  // Toggle password visibility for profile modal
+  document.querySelectorAll('.btn-toggle-eye').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (input) {
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = '🙈';
+        } else {
+          input.type = 'password';
+          btn.textContent = '👁️';
+        }
+      }
+    });
+  });
+
+  document.getElementById('form-update-admin-profile')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const current = store.getCurrentAdmin();
+    if (!current) return;
+
+    const fullName = document.getElementById('profile-admin-fullname').value.trim();
+    const currPass = document.getElementById('profile-admin-curr-pass').value.trim();
+    const newPass = document.getElementById('profile-admin-new-pass').value.trim();
+    const confirmPass = document.getElementById('profile-admin-confirm-pass').value.trim();
+
+    if (!fullName) {
+      window.UI.showToast('Họ và tên hiển thị không được để trống.', 'warning');
+      return;
+    }
+
+    if (newPass) {
+      if (!currPass) {
+        window.UI.showToast('Vui lòng nhập mật khẩu hiện tại để xác nhận đổi mật khẩu mới.', 'warning');
+        return;
+      }
+      if (newPass.length < 4) {
+        window.UI.showToast('Mật khẩu mới phải có ít nhất 4 ký tự.', 'warning');
+        return;
+      }
+      if (newPass !== confirmPass) {
+        window.UI.showToast('Xác nhận mật khẩu mới không khớp.', 'error');
+        return;
+      }
+    }
+
+    try {
+      const updated = store.updateAdminProfile(current.id, {
+        fullName,
+        currentPassword: currPass,
+        newPassword: newPass
+      });
+
+      // Update sidebar UI immediately
+      document.getElementById('admin-profile-name').textContent = updated.fullName;
+      window.UI.showToast('Đã cập nhật thông tin tài khoản quản trị thành công!', 'success');
+      document.getElementById('modal-admin-profile')?.classList.add('hidden');
+      renderAdminWorkspace();
+
+    } catch (err) {
+      window.UI.showToast(err.message, 'error');
+    }
   });
 
   // Close modals
