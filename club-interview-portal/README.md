@@ -23,6 +23,11 @@ Xem file: [`HUONG_DAN_SU_DUNG.md`](./HUONG_DAN_SU_DUNG.md) để đọc cẩm na
 
 ---
 
-## 🚀 Cách Deploy Lên Netlify Drop:
+## 🚀 Cách Deploy Lên Vercel & GitHub:
+### Cách 1: Deploy qua GitHub lên Vercel
+1. Tạo một repository mới trên GitHub và upload toàn bộ nội dung trong thư mục này lên (bảo đảm `index.html` và `vercel.json` nằm ở thư mục gốc của repository).
+2. Vào [vercel.com](https://vercel.com/) -> Bấm **Add New** -> **Project** -> Chọn repository vừa tạo -> Bấm **Deploy**.
+
+### Cách 2: Deploy trực tiếp lên Netlify Drop
 1. Mở trang: **[https://app.netlify.com/drop](https://app.netlify.com/drop)**
-2. Kéo thả nguyên thư mục `club-interview-portal` vào khung Netlify để có ngay website online trong 30 giây!
+2. Kéo thả nguyên thư mục này vào khung Netlify để có ngay website online trong 30 giây!
