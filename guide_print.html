@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hướng Dẫn Sử Dụng Hệ Thống Phỏng Vấn MCC.UEB</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.5;
+      font-size: 11pt;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid #ea580c;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-img {
+      width: 55px;
+      height: 55px;
+      object-fit: contain;
+    }
+    .brand-title {
+      font-size: 16pt;
+      font-weight: 900;
+      color: #0f172a;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .brand-subtitle {
+      font-size: 9pt;
+      color: #ea580c;
+      font-weight: 700;
+      margin: 2px 0 0 0;
+    }
+    .doc-badge {
+      background-color: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #c2410c;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 8.5pt;
+      text-align: right;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #0f172a;
+      border-left: 4px solid #ea580c;
+      padding-left: 8px;
+      margin-top: 22px;
+      margin-bottom: 10px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11pt;
+      color: #334155;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      page-break-after: avoid;
+    }
+    p, li {
+      font-size: 10pt;
+      color: #334155;
+    }
+    ul, ol {
+      margin-top: 4px;
+      margin-bottom: 8px;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 700;
+    }
+    .badge-super { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-mentor { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .badge-lead { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .card-box {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+    .tip-box {
+      background-color: #fff7ed;
+      border-left: 4px solid #f97316;
+      padding: 8px 12px;
+      margin: 10px 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 9pt;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    .footer-note {
+      text-align: center;
+      font-size: 8.5pt;
+      color: #94a3b8;
+      margin-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+    }
+    code {
+      background-color: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: Consolas, monospace;
+      font-size: 9pt;
+      color: #c2410c;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <img src="images/mcc-logo.png" alt="Logo" class="logo-img">
+      <div>
+        <h1 class="brand-title">MCC.UEB RECRUITMENT PORTAL</h1>
+        <p class="brand-subtitle">CLB TRUYỀN THÔNG MCC - TRƯỜNG ĐẠI HỌC KINH TẾ, ĐHQGHN</p>
+      </div>
+    </div>
+    <div class="doc-badge">
+      <div>CẨM NANG HƯỚNG DẪN SỬ DỤNG</div>
+      <div style="font-size: 7.5pt; font-weight: normal; color: #64748b; margin-top: 2px;">Phiên bản Gen XV • 2026</div>
+    </div>
+  </div>
+
+  <!-- PHẦN 1: TÀI KHOẢN QUẢN TRỊ -->
+  <h2>🔐 1. DANH SÁCH TÀI KHOẢN TEST & PHÂN QUYỀN (FULL DEMO)</h2>
+  <p style="margin-bottom: 6px;">Hệ thống hỗ trợ bấm 1 chạm vào các nút Demo hoặc đăng nhập trực tiếp bằng tài khoản sau:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 5%;">STT</th>
+        <th style="width: 20%;">Vai trò</th>
+        <th style="width: 20%;">Họ và tên</th>
+        <th style="width: 27%;">Tên đăng nhập (Email)</th>
+        <th style="width: 13%;">Mật khẩu</th>
+        <th style="width: 15%;">Phạm vi quyền</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">1</td>
+        <td><span class="badge badge-super">👑 Chủ Nhiệm CLB</span></td>
+        <td><strong>Nguyễn Việt Hoàng</strong></td>
+        <td><code>chunhiem.mcc@gmail.com</code></td>
+        <td><code>mcc@admin2026</code></td>
+        <td>Toàn quyền 6 ban + Xuất Excel + Import CSV + Cài Deadline</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">2</td>
+        <td><span class="badge badge-mentor">🎖️ Cố Vấn (Mentor)</span></td>
+        <td><strong>Mentor MCC</strong></td>
+        <td><code>mentor.mcc@gmail.com</code></td>
+        <td><code>mentor@mcc2026</code></td>
+        <td>Theo dõi 6 ban + Xuất Excel + Xem Audit Log</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">3</td>
+        <td><span class="badge badge-lead">🎨 TB Truyền Thông</span></td>
+        <td>Trần Thảo Linh</td>
+        <td><code>bantruyenthong.mcc@gmail.com</code></td>
+        <td><code>media@mcc2026</code></td>
+        <td>Mở/khóa ca, xem đơn & điểm danh Ban Truyền Thông</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">4</td>
+        <td><span class="badge badge-lead">🚀 TB Dự Án</span></td>
+        <td>Trịnh Hoài Nam</td>
+        <td><code>banduan.mcc@gmail.com</code></td>
+        <td><code>projects@mcc2026</code></td>
+        <td>Mở/khóa ca, xem đơn & điểm danh Ban Dự Án</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">5</td>
+        <td><span class="badge badge-lead">🤝 TB Đối Ngoại</span></td>
+        <td>Hoàng Phương Mai</td>
+        <td><code>bandoingoai.mcc@gmail.com</code></td>
+        <td><code>relations@mcc2026</code></td>
+        <td>Mở/khóa ca, xem đơn & điểm danh Ban Đối Ngoại</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">6</td>
+        <td><span class="badge badge-lead">💻 TB Kỹ Thuật</span></td>
+        <td>Đặng Quang Minh</td>
+        <td><code>bankythuat.mcc@gmail.com</code></td>
+        <td><code>tech@mcc2026</code></td>
+        <td>Mở/khóa ca, xem đơn & điểm danh Ban Kỹ Thuật</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">7</td>
+        <td><span class="badge badge-lead">🎉 TB Sự Kiện</span></td>
+        <td>Vũ Minh Tuấn</td>
+        <td><code>bansukien.mcc@gmail.com</code></td>
+        <td><code>events@mcc2026</code></td>
+        <td>Mở/khóa ca, xem đơn & điểm danh Ban Sự Kiện</td>
+      </tr>
+      <tr>
+        <td style="text-align: center; font-weight: bold;">8</td>
+        <td><span class="badge badge-lead">📋 TB Nhân Sự</span></td>
+        <td>Bùi Minh Đức</td>
+        <td><code>bannhansu.mcc@gmail.com</code></td>
+        <td><code>hr@mcc2026</code></td>
+        <td>Mở/khóa ca, xem đơn & điểm danh Ban Nhân Sự</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PHẦN 2: HƯỚNG DẪN ỨNG VIÊN -->
+  <h2>👩‍🎓 2. HƯỚNG DẪN DÀNH CHO ỨNG VIÊN (SINH VIÊN ĐĂNG KÝ)</h2>
+
+  <div class="card-box">
+    <h3 style="margin-top: 0; color: #c2410c;">A. Quy Trình 4 Bước Đăng Ký Ca Phỏng Vấn:</h3>
+    <ol>
+      <li><strong>Bước 1 (Thông tin cá nhân):</strong> Nhập Họ tên, Mã sinh viên (MSV), Email, Số điện thoại và Lớp.</li>
+      <li><strong>Bước 2 (Chọn ban ứng tuyển):</strong> Cho phép ứng tuyển tối đa 2 ban chuyên môn (NV1 & NV2).</li>
+      <li><strong>Bước 3 (Chọn ca phỏng vấn trên Timeline):</strong>
+        <ul>
+          <li>Chọn ngày phỏng vấn (05/09, 06/09, 07/09) và chọn khung giờ còn trống (sức chứa 2 ứng viên / ca).</li>
+          <li><em>Chống trùng lịch tự động:</em> Nếu đăng ký 2 ban, hệ thống sẽ cảnh báo và chặn nếu bạn chọn 2 ca trùng giờ nhau.</li>
+          <li><em>Hàng chờ (Waitlist):</em> Nếu ca mong muốn đã đủ 2/2, thí sinh có thể đăng ký vào Hàng chờ để tự động đôn lên khi có người hủy ca.</li>
+        </ul>
+      </li>
+      <li><strong>Bước 4 (Xác nhận & Hoàn tất):</strong> Nhận <strong>Mã booking (MCC-XXXXXX)</strong>, hỗ trợ đồng bộ Google Calendar hoặc tải file <code>.ics</code>.</li>
+    </ol>
+  </div>
+
+  <div class="card-box">
+    <h3 style="margin-top: 0; color: #c2410c;">B. Tra Cứu, Tự Đổi Ca & Hủy Ca Qua Mã Xác Thực OTP:</h3>
+    <ul>
+      <li>Bấm vào nút <strong><code>🔍 Tra Cứu / Đổi Ca</code></strong> ở đầu trang.</li>
+      <li>Nhập chính xác cặp <strong>Mã sinh viên (MSV)</strong> và <strong>Email</strong> đã dùng khi nộp đơn.</li>
+      <li>Nhận 6 số OTP qua email để vào trang tự phục vụ: xem thời gian, địa điểm, tự chuyển sang ca khác còn trống hoặc hủy ca khi có việc đột xuất.</li>
+    </ul>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PHẦN 3: HƯỚNG DẪN QUẢN TRỊ VIÊN -->
+  <h2>⚙️ 3. HƯỚNG DẪN DÀNH CHO BAN QUẢN TRỊ & TRƯỞNG BAN</h2>
+  <p>Bấm vào nút <strong><code>🔒 Quản Trị Admin</code></strong> ở góc phải thanh điều hướng:</p>
+
+  <div class="card-box">
+    <h3 style="margin-top: 0; color: #0f172a;">1️⃣ Tab: 📅 Quản Lý Lịch Phỏng Vấn (Mở mặc định)</h3>
+    <ul>
+      <li><strong>Bật / Tắt mở ca:</strong> Gạt nút Mở ca để công khai lịch cho sinh viên đăng ký. Hệ thống yêu cầu bắt buộc phải gán từ 2 người phỏng vấn trở lên mới được phép mở ca.</li>
+      <li><strong>Tạo ca thủ công:</strong> Bấm <code>+ Tạo ca phỏng vấn</code> để thêm ca lẻ theo ngày giờ, địa điểm phòng phỏng vấn.</li>
+      <li><strong>Tạo ca tự động:</strong> Bấm <code>⚡ Tạo lịch phỏng vấn tự động</code> để tự sinh 5 ca trong ngày cho ban.</li>
+      <li><strong>Thao tác hàng loạt:</strong> Tích chọn nhiều ca &rarr; chọn <code>⚙️ Tùy chọn</code> &rarr; Mở tất cả / Khóa tất cả / Xóa ca trống.</li>
+      <li><strong>Nhập CSV / Xuất Excel:</strong> Nạp file lịch phỏng vấn mẫu CSV hoặc xuất toàn bộ dữ liệu ra Excel chuẩn UTF-8.</li>
+    </ul>
+  </div>
+
+  <div class="card-box">
+    <h3 style="margin-top: 0; color: #0f172a;">2️⃣ Tab: 📑 Ca Ứng Viên Đăng Ký</h3>
+    <ul>
+      <li><strong>Tra cứu toàn diện:</strong> Tìm kiếm tức thì theo Họ tên, MSV, Email, Mã đơn booking <code>MCC-XXXXXX</code>.</li>
+      <li><strong>Lọc theo ban:</strong> Tự động phân quyền Trưởng ban chỉ xem hồ sơ ban mình, Chủ nhiệm xem toàn bộ.</li>
+      <li><strong>Can thiệp quản trị (Admin Override):</strong> Nút <code>Đổi ca</code> và <code>Hủy ca</code> hỗ trợ trực tiếp khi ứng viên liên hệ hotline.</li>
+    </ul>
+  </div>
+
+  <div class="card-box">
+    <h3 style="margin-top: 0; color: #0f172a;">3️⃣ Tab: 📋 Chi Tiết Ca & Điểm Danh (Tại Bàn Phỏng Vấn)</h3>
+    <ul>
+      <li><strong>Bộ lọc 2 tầng 1 chạm:</strong>
+        <br>• Tầng 1 (Ngày): <code>[ Tất cả ngày ]</code> <code>[ 05/09 ]</code> <code>[ 06/09 ]</code> <code>[ 07/09 ]</code>
+        <br>• Tầng 2 (Khung ca): <code>[ Tất cả ca ]</code> <code>[ Ca 1 (08h-10h) ]</code> <code>[ Ca 2 ]</code> <code>[ Ca 3 ]</code> <code>[ Ca 4 ]</code> <code>[ Ca 5 ]</code>
+      </li>
+      <li><strong>Điểm danh trực tiếp:</strong> Chuyển trạng thái <code>⏳ Chờ đến</code> &rarr; <code>🟢 Đã đến</code> &rarr; <code>🔴 Vắng mặt</code>.</li>
+      <li><strong>Bảo mật thông tin:</strong> Chỉ hiển thị ứng viên chính thức của ca đó, không hiển thị tên người phỏng vấn ra ngoài.</li>
+    </ul>
+  </div>
+
+  <div class="card-box">
+    <h3 style="margin-top: 0; color: #0f172a;">4️⃣ Tab: 📜 Lịch Sử Hoạt Động (Audit Logs)</h3>
+    <p style="margin: 0; font-size: 9.5pt;">Dành riêng cho Ban Chủ Nhiệm & Cố Vấn: Ghi lại nhật ký thời gian thực mọi thao tác tạo ca, sửa ca, xóa ca, đổi lịch của thí sinh để đảm bảo tính minh bạch cao nhất.</p>
+  </div>
+
+  <!-- PHẦN 4: HƯỚNG DẪN DEPLOY -->
+  <h2>🚀 4. HƯỚNG DẪN TRIỂN KHAI LÊN NETLIFY DROP</h2>
+  <div class="tip-box">
+    <strong>3 Bước Triển Khai Website Lên Online Trong 30 Giây:</strong>
+    <ol style="margin-top: 4px; margin-bottom: 4px;">
+      <li>Truy cập trang web: <strong><a href="https://app.netlify.com/drop" target="_blank" style="color: #c2410c;">https://app.netlify.com/drop</a></strong></li>
+      <li>Kéo toàn bộ thư mục dự án <strong><code>club-interview-portal</code></strong> và thả vào khung tròn Netlify.</li>
+      <li>Hệ thống cấp ngay đường link online (ví dụ: <code>https://mcc-interview-demo.netlify.app</code>) để gửi cho thành viên trong CLB dùng thử.</li>
+    </ol>
+  </div>
+
+  <div class="footer-note">
+    © 2026 CLB Truyền Thông MCC - Trường Đại học Kinh tế, ĐHQGHN. Mọi quyền được bảo lưu.
+  </div>
+
+</body>
+</html>
