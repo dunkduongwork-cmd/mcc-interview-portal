@@ -3,7 +3,7 @@
  * Media & Communication Club - VNU University of Economics and Business (UEB)
  */
 
-const STORAGE_KEY = 'MCC_UEB_CLEAN_SLATE_V5';
+const STORAGE_KEY = 'MCC_UEB_CLEAN_SLATE_V7';
 
 // Generate 50 Slots across 6 departments
 const generate50Slots = () => {
@@ -47,7 +47,7 @@ const generate50Slots = () => {
           const isOnline = shift.start === '18:30' || (idCount % 7 === 0);
           slots.push({
             id: `slot-${idCount++}`,
-            campaignId: 'camp-gen15',
+            campaignId: 'camp-gen16',
             departmentId: deptId,
             date: date,
             startTime: shift.start,
@@ -55,7 +55,7 @@ const generate50Slots = () => {
             capacity: 2,
             type: isOnline ? 'online' : 'offline',
             location: isOnline ? 'Google Meet Online' : 'Phòng 501 - Nhà E4, 144 Xuân Thủy',
-            meetUrl: isOnline ? 'https://meet.google.com/mcc-ueb-gen15' : '',
+            meetUrl: isOnline ? 'https://meet.google.com/mcc-ueb-gen16' : '',
             isOpen: true,
             interviewerIds: ivMap[deptId] || ['iv-1', 'iv-2']
           });
@@ -396,13 +396,13 @@ function getDateStr(days = 0) {
 // Multi-Campaign List
 const INITIAL_CAMPAIGNS = [
   {
-    id: 'camp-gen15',
-    name: 'Tuyển Quân Gen XV - Ignite The Next Chapter',
-    gen: 'Gen XV',
-    academicYear: '2025 - 2026',
-    slogan: 'Trẻ - Nhiệt Huyết - Chuyên Nghiệp | Nói được - Làm được - Chơi được',
+    id: 'camp-gen16',
+    name: 'FRAMEJUMP',
+    gen: 'Gen XVI',
+    academicYear: '2026 - 2027',
+    slogan: 'JUMP THE FRAME - OWN THE SCENE',
     locationOffline: 'Phòng 501 - Nhà E4, Trường ĐH Kinh tế - ĐHQGHN (144 Xuân Thủy, Cầu Giấy, HN)',
-    onlineMeetLink: 'https://meet.google.com/mcc-ueb-gen15',
+    onlineMeetLink: 'https://meet.google.com/mcc-ueb-gen16',
     contactEmail: 'mcc.ueb.vnu@gmail.com',
     contactHotline: '0987.654.321 (Ban Tuyển Quân MCC)',
     fanpageUrl: 'https://www.facebook.com/MCC.UEB',
@@ -410,6 +410,23 @@ const INITIAL_CAMPAIGNS = [
     endDate: getDateStr(7),
     registrationDeadline: getFutureDate(4, 0), // 4 days from now
     isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'camp-gen15',
+    name: 'Tuyển Quân Gen XV - Ignite The Next Chapter',
+    gen: 'Gen XV',
+    academicYear: '2025 - 2026',
+    slogan: 'Trẻ - Nhiệt Huyết - Chuyên Nghiệp | Nói được - Làm được - Chơi được',
+    locationOffline: 'Phòng 501 - Nhà E4',
+    onlineMeetLink: 'https://meet.google.com/mcc-ueb-gen15',
+    contactEmail: 'mcc.ueb.vnu@gmail.com',
+    contactHotline: '0987.654.321',
+    fanpageUrl: 'https://www.facebook.com/MCC.UEB',
+    startDate: getDateStr(-365),
+    endDate: getDateStr(-358),
+    registrationDeadline: getDateStr(-360),
+    isActive: false,
     createdAt: new Date().toISOString()
   },
   {
@@ -431,11 +448,69 @@ const INITIAL_CAMPAIGNS = [
   }
 ];
 
+// Firebase Configuration for MCC.UEB Interview Portal
+const firebaseConfig = {
+  apiKey: "AIzaSyD-Qt4dlZDRnSZV0BcyH7ovaLHviMgCDaU",
+  authDomain: "mcc-ueb-interview.firebaseapp.com",
+  projectId: "mcc-ueb-interview",
+  storageBucket: "mcc-ueb-interview.firebasestorage.app",
+  messagingSenderId: "953966798642",
+  appId: "1:953966798642:web:2456c811df7b75a4af192b",
+  measurementId: "G-F18F2WSRWC"
+};
+
+let cloudDb = null;
+try {
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    cloudDb = firebase.firestore();
+    console.log('🔥 [Firebase Cloud] Kết nối thành công tới Firestore project: mcc-ueb-interview');
+  }
+} catch (err) {
+  console.warn('🔥 [Firebase Cloud] Không thể khởi tạo Firebase, dùng tạm localStorage cục bộ:', err);
+}
+
 class Store {
   constructor() {
     this.data = this.loadData();
     this.listeners = [];
     this.otpStore = {}; // Temporary in-memory OTP cache { email: { code, expiresAt } }
+    this.isSyncingFromCloud = false;
+    this.initCloudSync();
+  }
+
+  initCloudSync() {
+    if (!cloudDb) return;
+    try {
+      const docRef = cloudDb.collection('mcc_portal').doc('live_data');
+
+      // Realtime Listener
+      docRef.onSnapshot((doc) => {
+        if (doc.exists) {
+          const cloudData = doc.data();
+          if (cloudData && Array.isArray(cloudData.campaigns) && cloudData.campaigns.length > 0) {
+            this.isSyncingFromCloud = true;
+            this.data = cloudData;
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+            } catch (e) {}
+            this.notify();
+            this.isSyncingFromCloud = false;
+            console.log('⚡ [Firebase Realtime] Đồng bộ dữ liệu toàn hệ thống thành công!');
+          }
+        } else {
+          // Khởi tạo dữ liệu gốc lên Firestore lần đầu tiên
+          console.log('⚡ [Firebase Realtime] Đang đẩy dữ liệu khởi tạo lên Cloud Firestore...');
+          docRef.set(this.data).catch(e => console.error('Lỗi khi seed dữ liệu lên Firestore:', e));
+        }
+      }, (err) => {
+        console.warn('⚡ [Firebase Realtime] Lỗi lắng nghe đồng bộ:', err);
+      });
+    } catch (e) {
+      console.error('Error in initCloudSync', e);
+    }
   }
 
   subscribe(listener) {
@@ -495,8 +570,14 @@ class Store {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       this.data = data;
       this.notify();
+
+      // Đẩy dữ liệu lên Firebase Firestore cho tất cả máy khác cùng thấy
+      if (cloudDb && !this.isSyncingFromCloud) {
+        cloudDb.collection('mcc_portal').doc('live_data').set(data)
+          .catch(e => console.error('Lỗi khi lưu dữ liệu lên Firebase Cloud:', e));
+      }
     } catch (e) {
-      console.error('Error saving localStorage', e);
+      console.error('Error saving data', e);
     }
   }
 
@@ -504,6 +585,10 @@ class Store {
     localStorage.removeItem(STORAGE_KEY);
     this.data = this.loadData();
     this.notify();
+    if (cloudDb) {
+      cloudDb.collection('mcc_portal').doc('live_data').set(this.data)
+        .catch(e => console.error('Error resetting cloud data', e));
+    }
     return this.data;
   }
 

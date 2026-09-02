@@ -42,13 +42,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    navLinks.forEach(link => {
-      if (link.getAttribute('data-route') === routeName) {
-        link.classList.add('bg-orange-50', 'text-orange-600', 'font-bold');
-        link.classList.remove('text-slate-600');
+    // Update Header Navigation Active State
+    const navButtons = [
+      { id: 'nav-btn-candidate', route: 'candidate', hasBorder: false },
+      { id: 'nav-btn-lookup', route: 'lookup', hasBorder: false },
+      { id: 'nav-btn-admin', route: 'admin', hasBorder: true }
+    ];
+
+    navButtons.forEach(({ id, route, hasBorder }) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const isActive = (route === routeName);
+      const icon = btn.querySelector('svg');
+
+      if (isActive) {
+        btn.className = 'px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white shadow-xs flex items-center gap-1.5 cursor-pointer border border-transparent';
+        if (icon) icon.className = 'w-4 h-4 text-amber-200';
       } else {
-        link.classList.remove('bg-orange-50', 'text-orange-600', 'font-bold');
-        link.classList.add('text-slate-600');
+        btn.className = `px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer border ${hasBorder ? 'border-slate-200' : 'border-transparent'}`;
+        if (icon) icon.className = 'w-4 h-4 text-slate-400';
       }
     });
 
@@ -68,23 +80,48 @@ document.addEventListener('DOMContentLoaded', () => {
   function initCandidateWizard() {
     const activeCamp = store.getActiveCampaign();
     const navGen = document.getElementById('nav-active-gen');
-    if (navGen) navGen.textContent = activeCamp.gen || 'Gen XV';
-    document.getElementById('hero-campaign-gen').textContent = activeCamp.academicYear ? `${activeCamp.gen} (${activeCamp.academicYear})` : (activeCamp.gen || 'Gen XV');
-    document.getElementById('hero-campaign-name').innerHTML = `${activeCamp.name.split('-')[0]}: <br class="hidden sm:inline"><span class="text-amber-300 drop-shadow">${activeCamp.name.split('-')[1] || ''}</span>`;
-    document.getElementById('hero-campaign-slogan').textContent = `"${activeCamp.slogan}"`;
+    if (navGen) navGen.textContent = activeCamp.gen || 'Gen XVI';
+    const heroGenEl = document.getElementById('hero-campaign-gen');
+    if (heroGenEl) {
+      heroGenEl.textContent = activeCamp.academicYear ? `CHECK IN ${activeCamp.gen.toUpperCase()} (${activeCamp.academicYear})` : (activeCamp.gen || 'CHECK IN GEN XVI');
+    }
+    const heroNameEl = document.getElementById('hero-campaign-name');
+    if (heroNameEl) {
+      heroNameEl.innerHTML = `<span class="text-[#FFF8EB] uppercase">${activeCamp.name}</span>`;
+    }
+    const heroSloganEl = document.getElementById('hero-campaign-slogan');
+    if (heroSloganEl) {
+      heroSloganEl.textContent = `"${activeCamp.slogan}"`;
+    }
 
-    // Deadline Display
+    // Deadline Display & Lock Wizard
     if (activeCamp.registrationDeadline) {
       const d = new Date(activeCamp.registrationDeadline);
-      document.getElementById('hero-deadline-text').textContent = d.toLocaleString('vi-VN');
+      const dlText = document.getElementById('hero-deadline-text');
+      if (dlText) dlText.textContent = d.toLocaleString('vi-VN');
+      
       const isPast = store.isPastDeadline(activeCamp.id);
       const badge = document.getElementById('hero-deadline-badge');
+      const wizardCard = document.getElementById('candidate-wizard-card');
+      const expiredCard = document.getElementById('candidate-expired-card');
+      const expiredCampName = document.getElementById('expired-camp-name');
+      if (expiredCampName) expiredCampName.textContent = activeCamp.name || 'FRAMEJUMP';
+
       if (isPast) {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white';
-        badge.textContent = 'Đã hết hạn';
+        if (badge) {
+          badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm';
+          badge.textContent = 'Đã hết hạn';
+        }
+        if (wizardCard) wizardCard.classList.add('hidden');
+        if (expiredCard) expiredCard.classList.remove('hidden');
+        return;
       } else {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white';
-        badge.textContent = 'Đang nhận đơn ứng tuyển';
+        if (badge) {
+          badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-sm';
+          badge.textContent = 'Đang nhận đơn ứng tuyển';
+        }
+        if (wizardCard) wizardCard.classList.remove('hidden');
+        if (expiredCard) expiredCard.classList.add('hidden');
       }
     }
 
@@ -93,6 +130,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function goToStep(stepNum) {
+    const activeCamp = store.getActiveCampaign();
+    if (store.isPastDeadline(activeCamp.id)) {
+      window.UI.showToast('Đã hết hạn nhận đơn & chọn ca phỏng vấn!', 'error');
+      initCandidateWizard();
+      return;
+    }
     wizardState.currentStep = stepNum;
     for (let i = 1; i <= 4; i++) {
       const pane = document.getElementById(`step-${i}-content`);
@@ -154,25 +197,28 @@ document.addEventListener('DOMContentLoaded', () => {
     departments.forEach(dept => {
       const isChecked = wizardState.selectedDeptIds.includes(dept.id);
       const card = document.createElement('div');
-      card.className = `p-5 rounded-3xl border transition-all flex flex-col justify-between cursor-pointer ${
-        isChecked ? 'bg-orange-50/80 border-orange-500 ring-2 ring-orange-500 shadow-md' : 'bg-white border-slate-200 hover:border-orange-300'
+      card.className = `p-6 rounded-3xl border transition-all flex flex-col justify-between cursor-pointer pro-card-interactive mouse-glow-card ${
+        isChecked ? 'bg-orange-50/70 border-[#C23B22] ring-2 ring-[#C23B22]/60 shadow-md' : 'bg-white border-stone-200 hover:border-stone-400 hover:shadow-card'
       }`;
 
       card.innerHTML = `
         <div>
-          <div class="flex items-center justify-end mb-3">
-            <button type="button" class="btn-open-jd text-[11px] font-bold text-orange-600 bg-orange-50 hover:bg-orange-600 hover:text-white px-2.5 py-1 rounded-xl transition-all" data-dept="${dept.id}">
-              Xem chi tiết ↗
+          <div class="flex items-center justify-between mb-4">
+            <span class="w-8 h-8 rounded-xl bg-stone-100 border border-stone-200 text-stone-800 font-black flex items-center justify-center text-xs">
+              ${dept.short.charAt(0)}
+            </span>
+            <button type="button" class="btn-open-jd text-[11px] font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 px-3 py-1 rounded-xl transition-all" data-dept="${dept.id}">
+              Chi tiết JD ↗
             </button>
           </div>
-          <h4 class="font-black text-slate-900 text-base mb-1">${dept.name}</h4>
-          <p class="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">${dept.desc}</p>
+          <h4 class="font-black text-stone-900 text-base mb-1.5">${dept.name}</h4>
+          <p class="text-xs text-stone-600 line-clamp-3 leading-relaxed mb-4">${dept.desc}</p>
         </div>
-        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-bold ${isChecked ? 'text-orange-600' : 'text-slate-500'}">
+        <div class="pt-3.5 border-t border-stone-100 flex items-center justify-between">
+          <span class="text-xs font-black ${isChecked ? 'text-[#C23B22]' : 'text-stone-500'}">
             ${isChecked ? '✓ Đã chọn ban này' : '+ Chọn ban này'}
           </span>
-          <input type="checkbox" class="dept-checkbox w-4 h-4 rounded text-orange-600" ${isChecked ? 'checked' : ''}>
+          <input type="checkbox" class="dept-checkbox w-4 h-4 rounded text-[#C23B22] cursor-pointer" ${isChecked ? 'checked' : ''}>
         </div>
       `;
 
@@ -1162,10 +1208,18 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
-    // Set Deadline Input
-    const deadlineInput = document.getElementById('admin-deadline-input');
-    if (deadlineInput && activeCamp.registrationDeadline) {
-      deadlineInput.value = activeCamp.registrationDeadline.slice(0, 16);
+    // Set Deadline Inputs (Separated Date & Time)
+    const dateInput = document.getElementById('admin-deadline-date');
+    const timeInput = document.getElementById('admin-deadline-time');
+    if (activeCamp.registrationDeadline) {
+      const d = new Date(activeCamp.registrationDeadline);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}`;
+      if (timeInput) timeInput.value = `${hh}:${min}`;
     }
 
     // Configure Action Buttons & Inputs for Mentor vs Ban Chủ Nhiệm
@@ -1305,10 +1359,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const badge = btn.querySelector('span[id^="badge-tab-"]');
       if (bTab === tabId) {
-        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 font-bold whitespace-nowrap';
+        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white shadow-md shadow-[#8B1E22]/25 font-bold whitespace-nowrap';
         if (badge) badge.className = 'shrink-0 px-2 py-0.5 text-[10px] font-black rounded-full bg-white/25 text-white ml-1';
       } else {
-        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-orange-50 hover:text-orange-700 font-bold whitespace-nowrap';
+        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-red-50/70 hover:text-[#8B1E22] font-bold whitespace-nowrap';
         if (badge) badge.className = 'shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 ml-1';
       }
     });
@@ -1888,17 +1942,56 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Deadline Quick Preset Handler
+  window.__setDeadlinePreset = function(preset) {
+    const now = new Date();
+    let target = new Date();
+    let timeStr = '23:59';
+
+    if (preset === 'today') {
+      target = now;
+      timeStr = '23:59';
+    } else if (preset === '3days') {
+      target.setDate(now.getDate() + 3);
+      timeStr = '23:59';
+    } else if (preset === '7days') {
+      target.setDate(now.getDate() + 7);
+      timeStr = '23:59';
+    } else if (preset === 'now') {
+      target.setMinutes(now.getMinutes() - 2);
+      const hh = String(target.getHours()).padStart(2, '0');
+      const min = String(target.getMinutes()).padStart(2, '0');
+      timeStr = `${hh}:${min}`;
+    }
+
+    const yyyy = target.getFullYear();
+    const mm = String(target.getMonth() + 1).padStart(2, '0');
+    const dd = String(target.getDate()).padStart(2, '0');
+
+    const dateEl = document.getElementById('admin-deadline-date');
+    const timeEl = document.getElementById('admin-deadline-time');
+    if (dateEl) dateEl.value = `${yyyy}-${mm}-${dd}`;
+    if (timeEl) timeEl.value = timeStr;
+    window.UI.showToast(`Đã chọn mốc: ${dd}/${mm}/${yyyy} lúc ${timeStr}. Hãy bấm "Lưu Hạn Chót"!`, 'info');
+  };
+
   // Update Deadline Form
   document.getElementById('form-update-deadline')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const activeCamp = store.getActiveCampaign();
-    const val = document.getElementById('admin-deadline-input').value;
-    if (!val) return;
+    const dateVal = document.getElementById('admin-deadline-date')?.value;
+    const timeVal = document.getElementById('admin-deadline-time')?.value || '23:59';
+    if (!dateVal) {
+      window.UI.showToast('Vui lòng chọn ngày hết hạn.', 'warning');
+      return;
+    }
 
     try {
-      store.updateCampaignDeadline(activeCamp.id, new Date(val).toISOString(), 'Admin cập nhật deadline đợt tuyển');
+      const isoStr = new Date(`${dateVal}T${timeVal}:00`).toISOString();
+      store.updateCampaignDeadline(activeCamp.id, isoStr, 'Admin cập nhật deadline đợt tuyển');
       window.UI.showToast('Đã cập nhật deadline thành công!', 'success');
       renderAdminWorkspace();
+      initCandidateWizard();
     } catch (err) {
       window.UI.showToast(err.message, 'error');
     }
@@ -2113,6 +2206,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Filter input listeners
   document.getElementById('admin-cand-search')?.addEventListener('input', renderAdminCandidatesTable);
+
+  // Dynamic Mouse Spotlight Glow for interactive cards
+  document.addEventListener('pointermove', (e) => {
+    const cards = document.querySelectorAll('.mouse-glow-card');
+    cards.forEach(card => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+    });
+  });
+
+  // Subscribe to real-time Cloud updates from Firebase
+  store.subscribe(() => {
+    // If admin view is active and user is logged in, refresh tables
+    const viewAdmin = document.getElementById('view-admin');
+    if (viewAdmin && !viewAdmin.classList.contains('hidden')) {
+      const activeAdmin = store.getCurrentAdmin();
+      if (activeAdmin) {
+        renderAdminWorkspace();
+      }
+    }
+    // If candidate view is at step 3, refresh slot columns and date strip
+    const step3 = document.getElementById('step-3-content');
+    if (step3 && !step3.classList.contains('hidden')) {
+      renderStep3Timeline();
+    }
+    // If lookup view is active and authenticated, refresh details
+    const viewLookup = document.getElementById('view-lookup');
+    if (viewLookup && !viewLookup.classList.contains('hidden') && authenticatedCandidateData) {
+      renderLookupDetails(authenticatedCandidateData.candidate.id);
+    }
+  });
 
   // Initial startup
   initCandidateWizard();

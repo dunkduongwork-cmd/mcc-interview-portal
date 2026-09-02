@@ -1,38 +1,84 @@
-/* MCC.UEB Brand Identity Stylesheet */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;800&display=swap');
+/* ==========================================================================
+   MCC.UEB DESIGN SYSTEM — CLEAN, EDITORIAL & FUNCTIONAL UI
+   CLB Truyền Thông MCC - Trường Đại học Kinh tế, ĐHQGHN
+   Typography: Plus Jakarta Sans (Chuẩn dấu Tiếng Việt 100%) & JetBrains Mono
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
 
 :root {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  /* --- Palette --- */
+  --bg-canvas: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --surface-subtle: #F1F5F9;
+
+  --text-main: #0F172A;        /* Slate 900 */
+  --text-body: #1E293B;        /* Slate 800 */
+  --text-muted: #64748B;       /* Slate 500 */
+  --text-subtle: #94A3B8;      /* Slate 400 */
+  
+  --border-subtle: #E2E8F0;    /* Slate 200 */
+  --border-strong: #CBD5E1;    /* Slate 300 */
+
+  /* --- MCC Signature Crimson & Warm Gold --- */
   --mcc-red: #8B1E22;
   --mcc-red-dark: #5A0E11;
-  --mcc-cream: #FAF5EA;
-  --mcc-orange: #ea580c;
+  --mcc-red-deep: #4A0B0E;
+  --primary: #8B1E22;
+  --primary-hover: #721418;
+  --primary-glow: rgba(139, 30, 34, 0.18);
+
+  --accent-gold: #E2B774;
+  --accent-gold-light: #F5E6C8;
+  --accent-amber: #D97706;
+
+  --status-success: #059669;
+  --status-error: #DC2626;
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --shadow-elevated: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 12px 28px -4px rgba(15, 23, 42, 0.06);
+
+  /* --- Typography --- */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Base resets & typography foundation */
+html {
+  font-family: var(--font-sans);
+  background-color: var(--bg-canvas);
+  color: var(--text-body);
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-canvas);
+  min-height: 100vh;
+  color: var(--text-body);
+}
+
+/* Heading & Font styles: chuẩn diacritics tiếng Việt, không dẹt, line-height cân đối */
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-sans);
+  letter-spacing: -0.015em;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-weight: 800;
 }
 
 code, pre, .font-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
 }
 
-/* MCC Signature Crimson & Warm Wine Gradients */
-.bg-mcc-gradient {
-  background: linear-gradient(135deg, #4A0B0E 0%, #6E1418 35%, #8B1E22 70%, #A6282E 100%);
-}
-
-.bg-mcc-fire {
-  background: linear-gradient(135deg, #8B1E22 0%, #B8282B 50%, #D97706 100%);
-}
-
-.text-mcc-fire {
-  background: linear-gradient(135deg, #ea580c 0%, #e11d48 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Glassmorphism */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+/* Custom Selection */
+::selection {
+  background-color: var(--primary);
+  color: #FFFFFF;
 }
 
 /* Custom Scrollbar */
@@ -41,47 +87,188 @@ code, pre, .font-mono {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: var(--bg-canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ea580c;
+  background: var(--primary);
 }
 
-/* Animation utilities */
+/* Clean Editorial Card */
+.pro-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+}
+
+.pro-card-interactive:hover {
+  border-color: #CBD5E1;
+  box-shadow: var(--shadow-elevated);
+  transform: translateY(-1px);
+}
+
+/* MCC Signature Crimson Hero Gradient */
+.bg-mcc-hero {
+  background: linear-gradient(135deg, #4A0B0E 0%, #6E1418 35%, #8B1E22 70%, #9F2126 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 36px -8px rgba(74, 11, 14, 0.35);
+}
+
+/* Standard Buttons */
+.btn-primary-pro {
+  background: linear-gradient(135deg, #8B1E22 0%, #A6282E 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px var(--primary-glow);
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-primary-pro:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 14px rgba(139, 30, 34, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-primary-pro:active {
+  transform: translateY(0);
+}
+
+.btn-secondary-pro {
+  background-color: #FFFFFF;
+  color: #334155;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary-pro:hover {
+  background-color: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+/* Standard Form Inputs: bo tròn 10px, viền mỏng tinh tế */
+input[type=text],
+input[type=email],
+input[type=tel],
+input[type=password],
+input[type=date],
+input[type=time],
+select,
+textarea {
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type=text]:focus,
+input[type=email]:focus,
+input[type=tel]:focus,
+input[type=password]:focus,
+input[type=date]:focus,
+input[type=time]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(194, 59, 34, 0.12);
+  outline: none;
+}
+
+/* Deadline picker flush styling (no nested borders) */
+.deadline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.deadline-pill input[type=date],
+.deadline-pill input[type=time] {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  font-weight: 700;
+  font-size: 12px;
+  color: #0F172A;
+  outline: none !important;
+  cursor: pointer;
+}
+
+/* Glass Panels with Clean Blur */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+/* Simple Smooth Fade-in */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Toast Animations */
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toastIn 0.25s ease-out forwards;
 }
 
 /* Range input styling for scoring sliders */
 input[type=range] {
   -webkit-appearance: none;
-  background: #e2e8f0;
+  background: #E2E8F0;
   border-radius: 9999px;
-  height: 8px;
+  height: 6px;
 }
 
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 22px;
-  width: 22px;
+  height: 18px;
+  width: 18px;
   border-radius: 50%;
-  background: #ea580c;
+  background: var(--primary);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.45);
-  transition: transform 0.1s ease;
+  box-shadow: 0 2px 6px rgba(194, 59, 34, 0.4);
+  transition: transform 0.15s ease;
 }
 
 input[type=range]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* Print styles for offline scorecards */

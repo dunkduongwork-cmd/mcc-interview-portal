@@ -1,5 +1,6 @@
 /**
- * Components.js - UI Rendering Modules for MCC.UEB
+ * Components.js - High-Craft UI Rendering Modules for MCC.UEB
+ * Built upon Anthropic Frontend Design & UI/UX Pro Max standards
  */
 
 window.UI = {
@@ -8,22 +9,44 @@ window.UI = {
     if (!container) {
       container = document.createElement('div');
       container.id = 'toast-container';
-      container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none';
+      container.className = 'fixed bottom-6 right-6 z-[1000] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
       document.body.appendChild(container);
     }
 
     const toast = document.createElement('div');
-    const colorClasses = {
-      success: 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-500/20',
-      error: 'bg-rose-600 text-white border-rose-500 shadow-rose-500/20',
-      warning: 'bg-amber-500 text-white border-amber-400 shadow-amber-500/20',
-      info: 'bg-slate-900 text-white border-slate-700 shadow-slate-900/20'
-    }[type] || 'bg-slate-900 text-white border-slate-700 shadow-slate-900/20';
+    const typeConfigs = {
+      success: {
+        bg: 'bg-emerald-950/90 border-emerald-500/40 text-emerald-100',
+        icon: '✓',
+        iconBg: 'bg-emerald-500/20 text-emerald-400'
+      },
+      error: {
+        bg: 'bg-rose-950/90 border-rose-500/40 text-rose-100',
+        icon: '✕',
+        iconBg: 'bg-rose-500/20 text-rose-400'
+      },
+      warning: {
+        bg: 'bg-amber-950/90 border-amber-500/40 text-amber-100',
+        icon: '⚠️',
+        iconBg: 'bg-amber-500/20 text-amber-300'
+      },
+      info: {
+        bg: 'bg-stone-900/95 border-stone-700/50 text-stone-100',
+        icon: 'ℹ️',
+        iconBg: 'bg-stone-800 text-stone-300'
+      }
+    }[type] || {
+      bg: 'bg-stone-900/95 border-stone-700/50 text-stone-100',
+      icon: 'ℹ️',
+      iconBg: 'bg-stone-800 text-stone-300'
+    };
 
-    toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold flex items-center gap-2.5 transition-all transform translate-y-2 opacity-0 animate-toast-in ${colorClasses}`;
+    toast.className = `pointer-events-auto px-4 py-3 rounded-2xl border backdrop-blur-md shadow-2xl text-xs font-semibold flex items-center gap-3 transition-all transform translate-y-2 opacity-0 animate-toast-in ${typeConfigs.bg}`;
     toast.innerHTML = `
-      <span>${type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-      <span>${message}</span>
+      <span class="w-6 h-6 rounded-xl flex items-center justify-center text-[11px] font-black shrink-0 ${typeConfigs.iconBg}">
+        ${typeConfigs.icon}
+      </span>
+      <span class="flex-1 leading-snug">${message}</span>
     `;
 
     container.appendChild(toast);
@@ -33,13 +56,13 @@ window.UI = {
 
     setTimeout(() => {
       toast.classList.add('opacity-0', 'translate-x-4');
-      setTimeout(() => toast.remove(), 300);
-    }, 3500);
+      setTimeout(() => toast.remove(), 320);
+    }, 3600);
   },
 
   renderDateStrip(dates, selectedDate, onSelectDate) {
     const container = document.createElement('div');
-    container.className = 'flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin';
+    container.className = 'flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-thin';
 
     dates.forEach(dateStr => {
       const [yy, mm, dd] = dateStr.split('-');
@@ -52,12 +75,12 @@ window.UI = {
       btn.type = 'button';
       btn.className = `px-5 py-3 rounded-2xl text-left flex-shrink-0 transition-all border ${
         isSelected
-          ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white border-orange-500 shadow-lg shadow-orange-600/20 scale-[1.02]'
-          : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50/30'
+          ? 'bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white border-[#8B1E22] shadow-md shadow-[#8B1E22]/20 scale-[1.02]'
+          : 'bg-white text-slate-700 border-slate-200 hover:border-red-300 hover:bg-red-50/40'
       }`;
 
       btn.innerHTML = `
-        <div class="text-[10px] font-black uppercase tracking-wider ${isSelected ? 'text-orange-200' : 'text-slate-400'}">${dayName}</div>
+        <div class="text-[10px] font-black uppercase tracking-wider ${isSelected ? 'text-amber-100' : 'text-slate-400'}">${dayName}</div>
         <div class="text-sm font-black mt-0.5">${dd}/${mm}/${yy}</div>
       `;
 
@@ -70,18 +93,18 @@ window.UI = {
 
   renderTimelineColumn(department, slotsForDate, selectedSlotId, otherDeptSelectedSlot, onSelectSlot) {
     const col = document.createElement('div');
-    col.className = 'flex-1 min-w-[300px] bg-slate-50/80 rounded-3xl p-5 border border-slate-200 space-y-4';
+    col.className = 'flex-1 min-w-[300px] bg-white rounded-3xl p-5 border border-stone-200 shadow-sm space-y-4';
 
     // Header
     col.innerHTML = `
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-orange-100 text-orange-700 font-black flex items-center justify-center text-xs">
+          <div class="w-8 h-8 rounded-xl bg-stone-100 text-stone-900 border border-stone-200 font-black flex items-center justify-center text-xs">
             ${department.short.charAt(0)}
           </div>
           <div>
-            <h4 class="font-extrabold text-slate-900 text-sm">${department.name}</h4>
-            <p class="text-[11px] text-slate-500">${slotsForDate.length} ca khả dụng</p>
+            <h4 class="font-extrabold text-stone-900 text-sm">${department.name}</h4>
+            <p class="text-[11px] text-stone-500 font-medium">${slotsForDate.length} ca khả dụng</p>
           </div>
         </div>
       </div>
@@ -92,7 +115,7 @@ window.UI = {
 
     if (slotsForDate.length === 0) {
       listContainer.innerHTML = `
-        <div class="py-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs">
+        <div class="py-10 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200 text-stone-400 text-xs">
           Không có ca phỏng vấn nào mở trong ngày này.
         </div>
       `;
@@ -115,45 +138,42 @@ window.UI = {
       }
 
       const card = document.createElement('div');
-      
       const isWaitlist = isFull && slot.isWaitlistAvailable;
 
       let cardStateClasses = '';
       if (isSelected) {
         cardStateClasses = isWaitlist
-          ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-500 shadow-md'
-          : 'bg-orange-50 border-orange-500 ring-2 ring-orange-500 shadow-md';
+          ? 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/60 shadow-md'
+          : 'bg-orange-50/90 border-[#C23B22] ring-2 ring-[#C23B22]/60 shadow-md';
       } else if (isOverlapping) {
-        cardStateClasses = 'bg-rose-50/40 border-rose-200 opacity-70 cursor-not-allowed';
+        cardStateClasses = 'bg-rose-50/40 border-rose-200 opacity-65 cursor-not-allowed';
       } else if (isWaitlist) {
-        cardStateClasses = 'bg-amber-50/30 border-amber-200 hover:border-amber-400 hover:bg-amber-50/60 hover:shadow-md cursor-pointer';
+        cardStateClasses = 'bg-amber-50/40 border-amber-200 hover:border-amber-400 hover:bg-amber-50/80 hover:shadow-md cursor-pointer';
       } else if (isFull) {
-        cardStateClasses = 'bg-slate-100/60 border-slate-200 opacity-60 cursor-not-allowed';
+        cardStateClasses = 'bg-stone-100/70 border-stone-200 opacity-60 cursor-not-allowed';
       } else {
-        cardStateClasses = 'bg-white border-slate-200 hover:border-orange-300 hover:shadow-md cursor-pointer';
+        cardStateClasses = 'bg-white border-stone-200 hover:border-stone-400 hover:shadow-md cursor-pointer';
       }
 
       card.className = `p-4 rounded-2xl border transition-all ${cardStateClasses}`;
 
-      const interviewersBadges = (slot.interviewers || []).map(iv => `<span class="inline-block px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-semibold">${iv.fullName}</span>`).join(' ');
-
       card.innerHTML = `
         <div class="flex items-center justify-between gap-2 mb-2">
-          <div class="font-black text-slate-900 text-sm flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full ${isSelected ? (isWaitlist ? 'bg-amber-500' : 'bg-orange-600') : isWaitlist ? 'bg-amber-400 animate-pulse' : isFull ? 'bg-slate-300' : isOverlapping ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
-            ${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)}
+          <div class="font-black text-stone-900 text-sm flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full ${isSelected ? (isWaitlist ? 'bg-amber-500' : 'bg-[#C23B22]') : isWaitlist ? 'bg-amber-400 animate-pulse' : isFull ? 'bg-stone-300' : isOverlapping ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
+            <span>${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)}</span>
           </div>
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${
-            isWaitlist ? 'bg-amber-100 text-amber-900 border border-amber-300' : isFull ? 'bg-slate-200 text-slate-600' : isSelected ? 'bg-orange-600 text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            isWaitlist ? 'bg-amber-100 text-amber-900 border border-amber-300' : isFull ? 'bg-stone-200 text-stone-600' : isSelected ? 'bg-[#C23B22] text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
           }">
             ${isWaitlist ? '⏳ Hàng chờ (Waitlist)' : isFull ? 'Hết chỗ' : `Còn ${slot.remainingCount}/${slot.capacity} chỗ`}
           </span>
         </div>
 
-        <div class="text-xs text-slate-600 mb-2.5">
-          <div class="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+        <div class="text-xs text-stone-600 mb-2.5">
+          <div class="flex items-center gap-1.5 text-[11px] font-medium text-stone-500">
             <span>📍</span>
-            <span>${slot.type === 'online' ? 'Online: Google Meet' : slot.location}</span>
+            <span class="truncate">${slot.type === 'online' ? 'Online: Google Meet' : slot.location}</span>
           </div>
         </div>
 
@@ -171,12 +191,12 @@ window.UI = {
           </div>
         ` : ''}
 
-        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-          <div class="text-[11px] font-medium text-slate-500">
+        <div class="pt-2 border-t border-stone-100 flex items-center justify-between">
+          <div class="text-[11px] font-medium text-stone-500">
             Sức chứa: <strong>${slot.capacity}</strong> ứng viên / ca
           </div>
           ${(!isFull || isWaitlist) && !isOverlapping ? `
-            <button type="button" class="text-xs font-bold ${isSelected ? (isWaitlist ? 'text-amber-800 font-black' : 'text-orange-600 font-black') : isWaitlist ? 'text-amber-700 hover:underline' : 'text-slate-700'}">
+            <button type="button" class="text-xs font-black ${isSelected ? (isWaitlist ? 'text-amber-800' : 'text-[#C23B22]') : isWaitlist ? 'text-amber-700 hover:underline' : 'text-stone-800 hover:text-[#C23B22]'}">
               ${isSelected ? (isWaitlist ? '✓ Đã chọn Waitlist' : '✓ Đã chọn') : (isWaitlist ? 'Đăng ký chờ →' : 'Chọn ca →')}
             </button>
           ` : ''}
@@ -199,7 +219,7 @@ window.UI = {
     const dept = reg.dept;
     const [yy, mm, dd] = (slot?.date || '').split('-');
 
-    card.className = 'bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4';
+    card.className = 'bg-white rounded-3xl border border-stone-200 shadow-sm p-6 space-y-4';
 
     const checkInBadge = {
       'pending': '<span class="px-3 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">Chờ phỏng vấn</span>',
@@ -208,39 +228,39 @@ window.UI = {
     }[reg.checkInStatus] || '';
 
     card.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-100">
         <div>
-          <span class="text-[10px] font-black uppercase tracking-wider text-orange-600">${dept?.name || 'Ban Chuyên Môn'}</span>
+          <span class="text-[10px] font-black uppercase tracking-wider text-[#C23B22]">${dept?.name || 'Ban Chuyên Môn'}</span>
           <div class="flex items-center gap-2 mt-0.5">
-            <span class="font-mono font-black text-slate-800 text-base">${reg.bookingCode}</span>
+            <span class="font-mono font-black text-stone-900 text-base">${reg.bookingCode}</span>
             ${checkInBadge}
           </div>
         </div>
         <div class="flex gap-2">
           ${!isAfterDeadline ? `
-            <button class="btn-reg-reschedule px-3.5 py-1.5 text-xs font-bold rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white transition-all">
+            <button class="btn-reg-reschedule px-3.5 py-1.5 text-xs font-bold rounded-xl bg-stone-100 text-stone-800 hover:bg-[#C23B22] hover:text-white transition-all">
               Đổi ca khác
             </button>
             <button class="btn-reg-cancel px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white transition-all">
               Hủy ca
             </button>
           ` : `
-            <span class="text-xs text-slate-400 italic">Đã qua hạn chót đổi ca</span>
+            <span class="text-xs text-stone-400 italic">Đã qua hạn chót đổi ca</span>
           `}
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-700">
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-          <div class="font-bold text-slate-500 uppercase text-[10px] mb-1">THỜI GIAN & ĐỊA ĐIỂM</div>
-          <div class="font-black text-slate-900 text-sm mb-1">${slot?.startTime} - ${slot?.endTime} (Ngày ${dd}/${mm}/${yy})</div>
-          <div class="text-slate-600">${slot?.type === 'online' ? 'Online: ' + (slot?.meetUrl || 'Google Meet') : slot?.location}</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-stone-700">
+        <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100">
+          <div class="font-bold text-stone-400 uppercase text-[10px] mb-1 tracking-wider">THỜI GIAN & ĐỊA ĐIỂM</div>
+          <div class="font-black text-stone-900 text-sm mb-1">${slot?.startTime} - ${slot?.endTime} (Ngày ${dd}/${mm}/${yy})</div>
+          <div class="text-stone-600 font-medium">${slot?.type === 'online' ? 'Online: ' + (slot?.meetUrl || 'Google Meet') : slot?.location}</div>
         </div>
 
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-          <div class="font-bold text-slate-500 uppercase text-[10px] mb-1">HÌNH THỨC & LƯU Ý</div>
-          <div class="font-bold text-slate-800 text-xs mb-1">${slot?.type === 'online' ? 'Phỏng vấn Online (Google Meet)' : 'Phỏng vấn Trực tiếp'}</div>
-          <div class="text-slate-500 text-[11px]">Vui lòng có mặt trước 10 phút để điểm danh</div>
+        <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100">
+          <div class="font-bold text-stone-400 uppercase text-[10px] mb-1 tracking-wider">HÌNH THỨC & LƯU Ý</div>
+          <div class="font-bold text-stone-900 text-xs mb-1">${slot?.type === 'online' ? 'Phỏng vấn Online (Google Meet)' : 'Phỏng vấn Trực tiếp'}</div>
+          <div class="text-stone-500 text-[11px]">Vui lòng có mặt trước 10 phút để điểm danh</div>
         </div>
       </div>
     `;

@@ -3,14 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCC.UEB - Cổng Đăng Ký Ca Phỏng Vấn Tuyển Quân</title>
+  <title>MCC.UEB — Cổng Đăng Ký Ca Phỏng Vấn Tuyển Quân</title>
   <link rel="icon" type="image/png" href="images/mcc-logo.png">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono (Chuẩn Tiếng Việt 100%) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
           colors: {
             brand: {
               50: '#fff7ed',
@@ -21,15 +31,12 @@
               800: '#9a3412',
               900: '#7c2d12'
             },
-            mccred: {
-              50: '#fff1f2',
-              100: '#ffe4e6',
-              600: '#e11d48',
-              700: '#be123c'
-            },
-            uebnavy: {
-              800: '#1e293b',
-              900: '#0f172a'
+            mcc: {
+              red: '#8B1E22',
+              deep: '#4A0B0E',
+              crimson: '#C23B22',
+              gold: '#E2B774',
+              goldLight: '#F5E6C8'
             }
           }
         }
@@ -38,33 +45,46 @@
   </script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="min-h-full flex flex-col text-slate-800 antialiased selection:bg-orange-500 selection:text-white bg-slate-50/80">
+<body class="min-h-full flex flex-col antialiased text-slate-800 bg-slate-50/90 selection:bg-[#C23B22] selection:text-white">
 
   <!-- NAVBAR -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+      <div class="flex items-center justify-between h-16 sm:h-18">
         
         <!-- Logo & Branding -->
-        <div class="flex items-center gap-3 cursor-pointer" data-route="candidate">
-          <img src="images/mcc-logo.png" alt="MCC Logo" class="w-10 h-10 object-contain rounded-xl bg-white p-0.5 shadow-sm border border-slate-200 hover:scale-105 transition-all">
-          <span class="text-base sm:text-lg font-black text-slate-900 tracking-tight">CLB Truyền Thông MCC - UEB</span>
+        <div class="flex items-center gap-3 cursor-pointer group" data-route="candidate">
+          <img src="images/mcc-logo.png" alt="MCC Logo" class="w-10 h-10 object-contain rounded-xl bg-white p-0.5 shadow-xs border border-slate-200 group-hover:scale-105 transition-all">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight block leading-tight">
+                CLB Truyền Thông MCC — UEB
+              </span>
+              <span class="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80" title="Dữ liệu đồng bộ đám mây Realtime giữa tất cả thiết bị">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Cloud Live</span>
+              </span>
+            </div>
+            <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 block">
+              Trường Đại học Kinh tế, ĐHQGHN
+            </span>
+          </div>
         </div>
 
         <!-- Navigation Tabs -->
-        <nav class="flex items-center gap-1 sm:gap-2">
-          <button data-route="candidate" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-orange-50 text-orange-600 flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        <nav class="flex items-center gap-1.5 sm:gap-2">
+          <button id="nav-btn-candidate" data-route="candidate" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white shadow-xs flex items-center gap-1.5 cursor-pointer border border-transparent">
+            <svg class="w-4 h-4 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             <span class="hidden sm:inline">Đăng ký ca phỏng vấn</span><span class="sm:hidden">Đăng ký</span>
           </button>
           
-          <button data-route="lookup" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <button id="nav-btn-lookup" data-route="lookup" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer border border-transparent">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <span class="hidden sm:inline">Tra cứu & đổi ca</span><span class="sm:hidden">Tra cứu</span>
           </button>
 
-          <button data-route="admin" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-1.5 border border-slate-200">
-            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          <button id="nav-btn-admin" data-route="admin" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 border border-slate-200 cursor-pointer">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
             <span>Admin 🔒</span>
           </button>
         </nav>
@@ -73,60 +93,104 @@
     </div>
   </header>
 
-  <!-- MAIN CONTENT -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- MAIN VIEWPORT -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
+    <!-- ========================================== -->
     <!-- 1. VIEW: CANDIDATE PORTAL (WIZARD 4 STEPS) -->
-    <section id="view-candidate" class="space-y-8">
+    <!-- ========================================== -->
+    <section id="view-candidate" class="space-y-6 sm:space-y-8 animate-fade-in">
       
-      <!-- Hero Banner -->
-      <div class="relative overflow-hidden rounded-3xl bg-mcc-gradient text-white p-8 sm:p-10 shadow-2xl border border-red-950/40">
+      <!-- Hero Banner (Rich Crimson Wine Gradient & Warm Gold Highlights) -->
+      <div class="relative overflow-hidden rounded-3xl bg-mcc-hero text-white p-7 sm:p-10 shadow-xl border border-red-950/40">
         <!-- Ambient brand glows -->
-        <div class="absolute -right-16 -bottom-16 w-96 h-96 bg-red-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -right-16 -bottom-16 w-96 h-96 bg-red-500/15 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -left-16 -top-16 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div class="max-w-3xl space-y-3.5">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-white/15 border border-white/20 text-amber-200 backdrop-blur-md shadow-sm">
-                <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
-                ĐỢT TUYỂN QUÂN CHÍNH THỨC
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-white/15 border border-white/20 text-[#F5E6C8] backdrop-blur-md shadow-xs">
+                <span class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></span>
+                MEDIA AND COMMUNICATION CLUB
               </span>
-              <span id="hero-campaign-gen" class="text-xs font-bold px-3 py-1 rounded-full bg-black/25 text-amber-100/90 border border-white/10">
-                Trường Đại học Kinh tế - ĐHQGHN
+              <span id="hero-campaign-gen" class="text-xs font-bold px-3 py-1 rounded-full bg-black/30 text-amber-100 border border-white/10 tracking-wide uppercase">
+                CHECK IN GEN XVI (2026 – 2027)
               </span>
             </div>
 
-            <h2 id="hero-campaign-name" class="text-3xl sm:text-4xl font-black tracking-tight leading-tight text-[#FFF8EB]">
-              Tuyển Quân Gen XV: <br class="hidden sm:inline">
-              <span class="text-amber-300 drop-shadow">Ignite The Next Chapter</span>
-            </h2>
+            <div class="space-y-1">
+              <h1 id="hero-campaign-name" class="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-[#FFF8EB] uppercase drop-shadow-sm">
+                FRAMEJUMP
+              </h1>
+            </div>
 
-            <p id="hero-campaign-slogan" class="text-amber-100/90 text-sm leading-relaxed italic">
-              "Trẻ - Nhiệt Huyết - Chuyên Nghiệp | Nói được - Làm được - Chơi được"
+            <p id="hero-campaign-slogan" class="text-[#F5E6C8] font-extrabold text-xs sm:text-sm tracking-widest uppercase">
+              "JUMP THE FRAME - OWN THE SCENE"
             </p>
 
-            <!-- Deadline Notice Banner -->
-            <div id="hero-deadline-box" class="p-3.5 rounded-2xl bg-black/35 border border-white/15 backdrop-blur-md flex items-center justify-between gap-3 text-xs max-w-xl shadow-inner">
+            <!-- Deadline Notice Banner (Inline Compact Layout) -->
+            <div id="hero-deadline-box" class="p-3 px-4 rounded-2xl bg-black/35 border border-white/15 backdrop-blur-md inline-flex flex-wrap items-center gap-3 text-xs shadow-inner mt-1">
               <div class="flex items-center gap-2 text-amber-50">
                 <span>⏰</span>
-                <span>Hạn chót đăng ký & đổi ca: <strong id="hero-deadline-text" class="text-amber-300 font-bold">--/--/----</strong></span>
+                <span>Hạn chót đăng ký & đổi ca: <strong id="hero-deadline-text" class="text-amber-300 font-bold font-mono">--/--/----</strong></span>
               </div>
-              <span id="hero-deadline-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-sm">Đang nhận đơn ứng tuyển</span>
+              <span id="hero-deadline-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs whitespace-nowrap">Đang nhận đơn ứng tuyển</span>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Expired Deadline Notice Card (Displayed when deadline has passed) -->
+      <div id="candidate-expired-card" class="hidden bg-white rounded-3xl border border-rose-200 shadow-xl p-8 sm:p-12 text-center max-w-3xl mx-auto space-y-6 animate-fade-in">
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-rose-50 border border-rose-100 flex items-center justify-center text-4xl shadow-inner">
+          🛑
+        </div>
+        
+        <div class="space-y-2">
+          <span class="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
+            Cổng Đăng Ký Đã Khóa
+          </span>
+          <h3 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 sm:whitespace-nowrap">
+            Đã Hết Hạn Đăng Ký & Chọn Ca Phỏng Vấn
+          </h3>
+          <p class="text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
+            Chiến dịch tuyển quân <strong class="text-slate-900" id="expired-camp-name">FRAMEJUMP</strong> của CLB Truyền Thông MCC đã chính thức kết thúc thời gian nhận đăng ký và chọn ca phỏng vấn.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-left text-xs text-amber-900 space-y-2">
+          <div class="font-black flex items-center gap-2 text-amber-800">
+            <span>💬</span>
+            <span>Bạn cần hỗ trợ hoặc gặp sự cố?</span>
+          </div>
+          <p class="leading-relaxed text-amber-950/90 font-medium">
+            Nếu bạn đã đăng ký nhưng cần hỗ trợ điều chỉnh khẩn cấp, hoặc có thắc mắc về lịch hẹn phỏng vấn, hãy nhắn tin trực tiếp qua <strong>Fanpage CLB Truyền Thông MCC - UEB</strong> để chúng mình hỗ trợ giải quyết sớm nhất nhé!
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <a href="https://www.facebook.com/MCC.UEB" target="_blank" rel="noopener noreferrer"
+            class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs shadow-lg shadow-orange-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <span>📩 Nhắn tin qua Fanpage MCC.UEB</span>
+            <span>↗</span>
+          </a>
+          <button type="button" onclick="document.querySelector('[data-route=lookup]')?.click()"
+            class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <span>🔍 Tra cứu ca đã đăng ký</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Registration Wizard Card -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-8">
+      <div id="candidate-wizard-card" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-8">
         
         <!-- Step Progress Indicator -->
         <div class="border-b border-slate-100 pb-6">
           <div class="flex items-center justify-between max-w-2xl mx-auto">
             
             <div class="step-indicator flex items-center gap-2 text-orange-600 font-bold text-xs" data-step="1">
-              <div class="w-7 h-7 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-black">1</div>
+              <div class="w-7 h-7 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-black shadow-xs">1</div>
               <span>Thông tin</span>
             </div>
             <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
@@ -151,52 +215,54 @@
           </div>
         </div>
 
-        <!-- Wizard Step Containers -->
-        <form id="wizard-form" novalidate class="space-y-8">
+        <!-- Wizard Step Form -->
+        <form id="wizard-form" novalidate class="space-y-6 sm:space-y-8">
           
           <!-- STEP 1: Personal Info -->
           <div id="step-1-content" class="wizard-step-pane space-y-5">
             <div>
-              <h3 class="text-lg font-black text-slate-900">Bước 1: Thông tin cá nhân</h3>
-              <p class="text-xs text-slate-500">Vui lòng điền chính xác thông tin để chúng mình liên hệ và sắp xếp ca phỏng vấn nhé</p>
+              <h3 class="text-lg sm:text-xl font-black text-slate-900">Bước 1: Thông tin cá nhân</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Vui lòng điền chính xác thông tin để chúng mình liên hệ và sắp xếp ca phỏng vấn nhé</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Họ và tên *</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Họ và tên *</label>
                 <input type="text" id="wiz-fullname" placeholder="Nguyễn Phương Thảo" required
-                  class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Mã sinh viên (MSV) *</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Mã sinh viên (MSV) *</label>
                 <input type="text" id="wiz-studentid" placeholder="2305xxxx" required
-                  class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-mono font-medium">
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Email cá nhân hoạt động *</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Email cá nhân hoạt động *</label>
                 <input type="email" id="wiz-email" placeholder="nhapemail@gmail.com" required
-                  class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
-                <p class="text-[10.5px] text-amber-800 bg-amber-50 rounded-xl p-2 mt-1.5 border border-amber-200/80 leading-relaxed font-medium">
-                  ⚠️ <strong>Lưu ý:</strong> Vui lòng nhập đúng Email bạn đang dùng được để nhận mã OTP qua Gmail nếu cần tra cứu hoặc đổi ca sau này.
-                </p>
+                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Số điện thoại (Zalo) *</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Số điện thoại (Zalo) *</label>
                 <input type="tel" id="wiz-phone" placeholder="0912345678" required
-                  class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Lớp / Khóa (tùy chọn)</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Lớp / Khóa (tùy chọn)</label>
                 <input type="text" id="wiz-class" placeholder="QH-2024-E CLC 1"
-                  class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
             </div>
 
-            <div class="flex justify-end pt-4">
-              <button type="button" id="btn-next-step-1" class="px-6 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition-all">
+            <!-- Email Notice Alert Box (Clean, Soft Amber, Placed Nicely) -->
+            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed font-medium">
+              ⚠️ <strong>Lưu ý:</strong> Vui lòng nhập đúng Email bạn đang dùng được để nhận mã OTP qua Gmail nếu cần tra cứu hoặc đổi ca sau này.
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="button" id="btn-next-step-1" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
                 Tiếp tục: Chọn ban ứng tuyển →
               </button>
             </div>
@@ -204,12 +270,12 @@
 
           <!-- STEP 2: Choose 1 or 2 Departments -->
           <div id="step-2-content" class="wizard-step-pane hidden space-y-5">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 class="text-lg font-black text-slate-900">Bước 2: Chọn ban ứng tuyển</h3>
-                <p class="text-xs text-slate-500">Bạn có thể chọn <strong>tối thiểu 1 ban</strong> và <strong>tối đa 2 ban</strong> trong 6 ban ứng tuyển</p>
+                <h3 class="text-lg sm:text-xl font-black text-slate-900">Bước 2: Chọn ban ứng tuyển</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Bạn có thể chọn <strong>tối thiểu 1 ban</strong> và <strong>tối đa 2 ban</strong> trong 6 ban ứng tuyển</p>
               </div>
-              <span id="selected-dept-count-badge" class="px-3 py-1 text-xs font-bold rounded-full bg-orange-100 text-orange-800">Đã chọn: 0/2 ban</span>
+              <span id="selected-dept-count-badge" class="px-3 py-1 text-xs font-bold rounded-full bg-red-50 text-[#8B1E22] border border-red-200">Đã chọn: 0/2 ban</span>
             </div>
 
             <div id="wizard-depts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -217,11 +283,11 @@
             </div>
 
             <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-              <button type="button" id="btn-prev-step-2" class="px-5 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-100 font-bold text-xs">
+              <button type="button" id="btn-prev-step-2" class="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs cursor-pointer">
                 ← Quay lại
               </button>
-              <button type="button" id="btn-next-step-2" class="px-6 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition-all">
-                Tiếp tục: Chọn ca phỏng vấn (timeline) →
+              <button type="button" id="btn-next-step-2" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
+                Tiếp tục: Chọn ca phỏng vấn →
               </button>
             </div>
           </div>
@@ -229,8 +295,8 @@
           <!-- STEP 3: Parallel Timeline Slot Selection -->
           <div id="step-3-content" class="wizard-step-pane hidden space-y-6">
             <div>
-              <h3 class="text-lg font-black text-slate-900">Bước 3: Chọn khung giờ phỏng vấn (timeline trực quan)</h3>
-              <p class="text-xs text-slate-500">
+              <h3 class="text-lg sm:text-xl font-black text-slate-900">Bước 3: Chọn khung giờ phỏng vấn</h3>
+              <p class="text-xs text-slate-500 mt-0.5">
                 Chọn ngày trước, sau đó chọn ca cho từng ban. Nếu chọn 2 ban, hệ thống sẽ <strong>tự động chặn các ca bị trùng (overlap) thời gian</strong>.
               </p>
             </div>
@@ -252,24 +318,24 @@
             </div>
 
             <!-- Special Case / Hotline Notice -->
-            <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900">
+            <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900">
               <div class="flex items-center gap-2.5">
                 <span class="text-xl">📞</span>
                 <div>
                   <strong>Bị trùng toàn bộ lịch học và không chọn được ca?</strong>
-                  <p class="text-[11px] text-amber-800">Hãy chọn ca ở trạng thái <strong>Hàng chờ (Waitlist)</strong> hoặc liên hệ Fanpage MCC.UEB để Ban Tổ Chức hỗ trợ tìm ca phỏng vấn phù hợp nhé!</p>
+                  <p class="text-[11px] text-amber-800 mt-0.5">Hãy chọn ca ở trạng thái <strong>Hàng chờ (Waitlist)</strong> hoặc liên hệ Fanpage MCC.UEB để Ban Tổ Chức hỗ trợ tìm ca phỏng vấn phù hợp nhé!</p>
                 </div>
               </div>
-              <a href="https://www.facebook.com/MCC.UEB" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-black text-[11px] whitespace-nowrap transition-all border border-amber-300">
+              <a href="https://www.facebook.com/MCC.UEB" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-black text-[11px] whitespace-nowrap transition-all border border-amber-300 cursor-pointer">
                 Nhắn tin Fanpage →
               </a>
             </div>
 
             <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-              <button type="button" id="btn-prev-step-3" class="px-5 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-100 font-bold text-xs">
+              <button type="button" id="btn-prev-step-3" class="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs cursor-pointer">
                 ← Quay lại
               </button>
-              <button type="button" id="btn-next-step-3" class="px-6 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition-all">
+              <button type="button" id="btn-next-step-3" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
                 Tiếp tục: Xem lại & Hoàn tất →
               </button>
             </div>
@@ -278,8 +344,8 @@
           <!-- STEP 4: Review & Confirm -->
           <div id="step-4-content" class="wizard-step-pane hidden space-y-6">
             <div>
-              <h3 class="text-lg font-black text-slate-900">Bước 4: Xác nhận đăng ký ca phỏng vấn</h3>
-              <p class="text-xs text-slate-500">Kiểm tra lại toàn bộ thông tin đăng ký của bạn trước khi hệ thống cấp mã đơn chính thức</p>
+              <h3 class="text-lg sm:text-xl font-black text-slate-900">Bước 4: Xác nhận đăng ký ca phỏng vấn</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Kiểm tra lại toàn bộ thông tin đăng ký của bạn trước khi hệ thống cấp mã đơn chính thức</p>
             </div>
 
             <!-- Summary Box -->
@@ -288,10 +354,10 @@
             </div>
 
             <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-              <button type="button" id="btn-prev-step-4" class="px-5 py-2.5 rounded-2xl text-slate-600 hover:bg-slate-100 font-bold text-xs">
+              <button type="button" id="btn-prev-step-4" class="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs cursor-pointer">
                 ← Quay lại sửa ca
               </button>
-              <button type="button" id="btn-submit-registration" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm shadow-xl shadow-orange-600/30 transition-all flex items-center gap-2">
+              <button type="button" id="btn-submit-registration" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-black text-sm shadow-md shadow-[#8B1E22]/25 transition-all flex items-center gap-2 cursor-pointer">
                 🔥 Xác nhận đăng ký ca
               </button>
             </div>
@@ -302,39 +368,42 @@
       </div>
 
     </section>
-    <!-- 2. VIEW: LOOKUP & RESCHEDULE WITH EMAIL OTP -->
-    <section id="view-lookup" class="hidden max-w-4xl mx-auto space-y-8">
+
+    <!-- ================================================= -->
+    <!-- 2. VIEW: LOOKUP & RESCHEDULE WITH EMAIL OTP       -->
+    <!-- ================================================= -->
+    <section id="view-lookup" class="hidden max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div class="text-center space-y-2">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 mb-2">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 mb-1 border border-orange-200">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
         </div>
         <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Tra cứu / đổi / hủy ca phỏng vấn</h2>
-        <p class="text-xs sm:text-sm text-slate-500">Nhập mã sinh viên (MSV) và Email đã đăng ký để kiểm tra và quản lý lịch hẹn của bạn</p>
+        <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">Nhập mã sinh viên (MSV) và Email đã đăng ký để kiểm tra và quản lý lịch hẹn của bạn</p>
       </div>
 
       <!-- Step A: Request OTP Box -->
       <div id="lookup-request-box" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 max-w-xl mx-auto">
         <form id="form-request-otp" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Mã sinh viên (MSV) *</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Mã sinh viên (MSV) *</label>
             <input type="text" id="lookup-studentid" placeholder="2305xxxx" required
-              class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-mono font-bold">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Email đăng ký *</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Email đăng ký *</label>
             <input type="email" id="lookup-email" placeholder="example@ueb.edu.vn" required
-              class="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
+              class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-medium">
           </div>
-          <button type="submit" class="w-full py-3.5 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs shadow-md transition-all flex items-center justify-center gap-2">
+          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-black text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer">
             ✉️ Gửi mã OTP xác thực
           </button>
         </form>
       </div>
 
-      <!-- Step B: Enter OTP Box (Real production-grade UI) -->
+      <!-- Step B: Enter OTP Box -->
       <div id="lookup-verify-box" class="hidden bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-md mx-auto animate-fade-in">
         <div class="text-center space-y-2">
-          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 text-xl font-bold mb-1">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 text-xl font-bold mb-1 border border-emerald-100">
             📩
           </div>
           <h4 class="font-black text-slate-900 text-lg">Nhập mã OTP xác thực</h4>
@@ -350,15 +419,15 @@
         <form id="form-verify-otp" class="space-y-4">
           <div>
             <input type="text" id="lookup-otp-input" maxlength="6" placeholder="• • • • • •" autocomplete="one-time-code" required
-              class="w-full px-4 py-3.5 text-center tracking-[0.6em] font-mono text-2xl font-black rounded-2xl border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 outline-none transition-all placeholder:tracking-widest placeholder:text-slate-300">
+              class="w-full px-4 py-3 text-center tracking-[0.6em] font-mono text-2xl font-black rounded-xl border-2 border-slate-200 focus:border-[#C23B22] focus:ring-4 focus:ring-orange-100 outline-none transition-all placeholder:tracking-widest placeholder:text-slate-300">
           </div>
 
-          <button type="submit" id="btn-submit-verify-otp" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2">
+          <button type="submit" id="btn-submit-verify-otp" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
             ✓ Xác thực & Mở lịch hẹn
           </button>
 
           <div class="flex items-center justify-between pt-2 text-xs font-semibold">
-            <button type="button" id="btn-back-to-request-otp" class="text-slate-500 hover:text-slate-800 transition-all">
+            <button type="button" id="btn-back-to-request-otp" class="text-slate-500 hover:text-slate-800 transition-all cursor-pointer">
               ← Đổi email khác
             </button>
             <button type="button" id="btn-resend-otp" disabled class="text-orange-600 hover:text-orange-700 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">
@@ -368,7 +437,7 @@
         </form>
       </div>
 
-      <!-- Step C: Candidate Dashboard (Hidden initially) -->
+      <!-- Step C: Candidate Dashboard -->
       <div id="lookup-dashboard" class="hidden space-y-6 animate-fade-in">
         <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -379,7 +448,7 @@
             <h3 id="dash-cand-name" class="text-xl font-black text-slate-900 mt-1">Nguyễn Phương Thảo</h3>
             <p id="dash-cand-info" class="text-xs text-slate-500 mt-0.5">MSV: 23050112 • Email: thao.nguyen23@ueb.edu.vn</p>
           </div>
-          <button id="btn-logout-candidate" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200">
+          <button id="btn-logout-candidate" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200 cursor-pointer">
             Đăng xuất
           </button>
         </div>
@@ -394,56 +463,59 @@
 
     </section>
 
-    <!-- 4. VIEW: ADMIN CONTROL CENTER (PROTECTED BY ADMIN LOGIN) -->
-    <section id="view-admin" class="hidden space-y-8">
+    <!-- ================================================= -->
+    <!-- 3. VIEW: ADMIN CONTROL CENTER                     -->
+    <!-- ================================================= -->
+    <section id="view-admin" class="hidden space-y-8 animate-fade-in">
       
       <!-- A. ADMIN LOGIN CARD (Shown when not authenticated) -->
       <div id="admin-login-card" class="max-w-md mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-xl space-y-6 animate-fade-in my-8">
         <div class="text-center space-y-2">
           <img src="images/mcc-logo.png" alt="MCC Logo" class="w-16 h-16 object-contain mx-auto">
-          <h3 class="text-2xl font-black text-slate-900">Admin</h3>
+          <h3 class="text-2xl font-black text-slate-900">Admin Portal</h3>
+          <p class="text-xs text-slate-500">Đăng nhập tài khoản quản trị viên tuyển quân</p>
         </div>
 
         <form id="form-admin-login" class="space-y-4 text-xs">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Tài khoản / Email *</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Tài khoản / Email *</label>
             <input type="text" id="admin-login-username" value="" placeholder="banchunhiem.mcc@gmail.com" required
-              class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none font-medium">
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-medium">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Mật khẩu *</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Mật khẩu *</label>
             <div class="relative">
               <input type="password" id="admin-login-password" value="" placeholder="••••••••" required
-                class="w-full px-4 py-3 pr-12 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none font-medium">
-              <button type="button" id="btn-toggle-admin-password" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-lg text-base transition-all select-none" title="Hiện/Ẩn mật khẩu">
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-medium">
+              <button type="button" id="btn-toggle-admin-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-lg text-base transition-all select-none cursor-pointer" title="Hiện/Ẩn mật khẩu">
                 👁️
               </button>
             </div>
           </div>
-          <button type="submit" class="w-full py-3.5 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs shadow-lg shadow-orange-600/30 transition-all flex items-center justify-center gap-2">
+          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-black text-xs shadow-md shadow-[#8B1E22]/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
             🔐 Đăng nhập
           </button>
         </form>
       </div>
 
-      <!-- B. ADMIN DASHBOARD VIEW (Shown only when authenticated - ERP Sidebar Layout) -->
+      <!-- B. ADMIN DASHBOARD VIEW (ERP Sidebar Layout) -->
       <div id="admin-dashboard-view" class="hidden animate-fade-in">
         <div class="flex flex-col lg:flex-row items-start gap-6">
           
           <!-- LEFT SIDEBAR NAVIGATION -->
           <aside class="w-full lg:w-72 shrink-0 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 space-y-4 lg:sticky lg:top-20">
             <!-- Admin User Profile Info Card -->
-            <div class="flex items-center gap-3 p-3 rounded-2xl bg-orange-50/70 border border-orange-200/80 hover:bg-orange-100/60 transition-all cursor-pointer" onclick="window.__openAdminProfileModal(event)" title="Bấm để Đổi tên & Mật khẩu tài khoản">
+            <div class="flex items-center gap-3 p-3 rounded-2xl bg-[#FDF8F7] border border-[#F2DCD8] hover:bg-[#FBEBE8] transition-all cursor-pointer" onclick="window.__openAdminProfileModal(event)" title="Bấm để Đổi tên & Mật khẩu tài khoản">
               <span id="admin-profile-avatar" class="text-2xl select-none">👑</span>
               <div class="min-w-0 flex-1">
                 <div id="admin-profile-name" class="font-black text-slate-900 text-xs truncate">Admin</div>
-                <div id="admin-profile-role" class="text-[10px] text-orange-700 font-semibold truncate">Chủ Nhiệm</div>
+                <div id="admin-profile-role" class="text-[10px] text-[#8B1E22] font-bold truncate">Chủ Nhiệm</div>
               </div>
               <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
-                <button type="button" onclick="window.__openAdminProfileModal(event)" id="btn-open-admin-profile-modal" title="Cài đặt tài khoản & Đổi mật khẩu" class="p-1.5 rounded-xl bg-white hover:bg-orange-200 text-orange-700 border border-orange-300 font-bold transition-all text-xs cursor-pointer shadow-sm">
+                <button type="button" onclick="window.__openAdminProfileModal(event)" id="btn-open-admin-profile-modal" title="Cài đặt tài khoản & Đổi mật khẩu" class="p-1.5 rounded-xl bg-white hover:bg-red-50 text-[#8B1E22] border border-red-200 font-bold transition-all text-xs cursor-pointer shadow-xs">
                   ⚙️
                 </button>
-                <button type="button" id="btn-admin-logout" title="Đăng xuất" class="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-all text-xs cursor-pointer shadow-sm">
+                <button type="button" id="btn-admin-logout" title="Đăng xuất" class="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-all text-xs cursor-pointer shadow-xs">
                   🚪
                 </button>
               </div>
@@ -452,7 +524,7 @@
             <!-- Navigation Menu Tabs -->
             <nav class="space-y-1 text-xs font-bold" id="admin-sidebar-nav">
               <!-- 1. Slots Management (Quản lý lịch phỏng vấn) -->
-              <button type="button" data-admin-tab="slots" id="nav-tab-slots" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/30 whitespace-nowrap">
+              <button type="button" data-admin-tab="slots" id="nav-tab-slots" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white shadow-md shadow-[#8B1E22]/25 whitespace-nowrap cursor-pointer">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="text-base shrink-0">📅</span>
                   <span class="truncate">Quản lý lịch phỏng vấn</span>
@@ -461,7 +533,7 @@
               </button>
 
               <!-- 2. Candidate Directory (Ca ứng viên đăng ký) -->
-              <button type="button" data-admin-tab="candidates" id="nav-tab-candidates" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 whitespace-nowrap">
+              <button type="button" data-admin-tab="candidates" id="nav-tab-candidates" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 whitespace-nowrap cursor-pointer">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="text-base shrink-0">📑</span>
                   <span class="truncate">Ca ứng viên đăng ký</span>
@@ -469,16 +541,16 @@
                 <span id="badge-tab-cands-count" class="shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 ml-1">0 đơn</span>
               </button>
 
-              <!-- 4. Interview Details (Chi tiết ca & điểm danh) -->
-              <button type="button" data-admin-tab="checkin" id="nav-tab-checkin" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 whitespace-nowrap">
+              <!-- 3. Interview Details (Chi tiết ca & điểm danh) -->
+              <button type="button" data-admin-tab="checkin" id="nav-tab-checkin" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 whitespace-nowrap cursor-pointer">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="text-base shrink-0">📋</span>
                   <span class="truncate">Chi tiết ca & điểm danh</span>
                 </div>
               </button>
 
-              <!-- 5. Audit Logs (Ban Chủ Nhiệm & Mentor) -->
-              <button type="button" data-admin-tab="audit" id="nav-tab-audit" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 whitespace-nowrap">
+              <!-- 4. Audit Logs (Ban Chủ Nhiệm & Mentor) -->
+              <button type="button" data-admin-tab="audit" id="nav-tab-audit" class="admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-slate-100 whitespace-nowrap cursor-pointer">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="text-base shrink-0">📜</span>
                   <span class="truncate">Lịch sử hoạt động</span>
@@ -488,7 +560,7 @@
 
             <!-- Create Campaign Button (Bottom of Sidebar) -->
             <div class="pt-3 border-t border-slate-100" id="sidebar-create-campaign-container">
-              <button type="button" id="btn-open-new-campaign-modal" class="w-full px-3.5 py-2.5 text-xs font-bold rounded-2xl bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white transition-all flex items-center justify-center gap-2 border border-orange-200 shadow-sm cursor-pointer">
+              <button type="button" id="btn-open-new-campaign-modal" class="w-full px-3.5 py-2.5 text-xs font-bold rounded-2xl bg-[#FDF8F7] text-[#8B1E22] hover:bg-[#8B1E22] hover:text-white transition-all flex items-center justify-center gap-2 border border-[#F2DCD8] shadow-xs cursor-pointer">
                 <span>🌟</span>
                 <span>Tạo đợt tuyển mới</span>
               </button>
@@ -505,7 +577,7 @@
                   <h2 class="text-lg font-black text-slate-900 leading-tight" id="admin-pane-title">Số lượng đơn theo từng ban</h2>
                   <div class="flex items-center gap-2 mt-0.5">
                     <label class="text-xs font-bold text-slate-500">Đợt tuyển:</label>
-                    <select id="admin-campaign-selector" class="px-3 py-0.5 text-xs font-bold rounded-xl border border-orange-200 bg-orange-50 text-orange-800 outline-none">
+                    <select id="admin-campaign-selector" class="px-3 py-1 text-xs font-bold rounded-xl border border-orange-200 bg-orange-50 text-orange-800 outline-none cursor-pointer">
                       <!-- Injected dynamically -->
                     </select>
                   </div>
@@ -516,22 +588,50 @@
             <!-- PANE 2: TAB SLOTS MANAGEMENT -->
             <div id="admin-pane-slots" class="admin-tab-pane hidden space-y-6 animate-fade-in">
               <!-- DEADLINE SETTINGS BANNER (Exclusive for Ban Chủ Nhiệm inside Slots Management) -->
-              <div id="admin-deadline-card-box" class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl border border-amber-200/80 p-5 shadow-sm space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div class="flex items-center gap-2.5">
-                    <span class="p-2 rounded-2xl bg-amber-500 text-white text-base">⏰</span>
+              <div id="admin-deadline-card-box" class="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 rounded-3xl border border-amber-200/90 p-5 sm:p-6 shadow-sm space-y-4">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div class="flex items-start gap-3">
+                    <span class="p-2.5 rounded-2xl bg-amber-500 text-white text-lg shadow-sm">⏰</span>
                     <div>
-                      <h3 class="font-black text-slate-900 text-sm">Deadline ứng viên đăng ký & đổi ca</h3>
-                      <p class="text-xs text-slate-600 font-medium">Sau thời điểm này, toàn bộ ứng viên sẽ bị khóa tính năng chọn ca và đổi ca.</p>
+                      <h3 class="font-black text-slate-900 text-sm sm:text-base">Deadline ứng viên đăng ký & đổi ca</h3>
+                      <p class="text-xs text-slate-600 font-medium mt-0.5">Sau thời điểm này, toàn bộ ứng viên sẽ bị khóa tính năng chọn ca và đổi ca.</p>
                     </div>
                   </div>
-                  <form id="form-update-deadline" class="flex items-center gap-2">
-                    <input type="datetime-local" id="admin-deadline-input" required
-                      class="px-3.5 py-2 rounded-xl border border-amber-300 bg-white font-bold text-xs outline-none focus:ring-2 focus:ring-orange-500">
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs shadow-md transition-all whitespace-nowrap cursor-pointer">
-                      💾 Lưu
+
+                  <form id="form-update-deadline" class="flex flex-wrap items-center gap-2.5">
+                    <!-- Date Pill -->
+                    <div class="deadline-pill">
+                      <span class="text-xs text-slate-500 font-bold select-none">📅 Ngày:</span>
+                      <input type="date" id="admin-deadline-date" required>
+                    </div>
+
+                    <!-- Time Pill -->
+                    <div class="deadline-pill">
+                      <span class="text-xs text-slate-500 font-bold select-none">⏰ Giờ:</span>
+                      <input type="time" id="admin-deadline-time" required>
+                    </div>
+
+                    <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+                      <span>💾 Lưu Hạn Chót</span>
                     </button>
                   </form>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/60 text-[11px] font-bold">
+                  <span class="text-slate-500 font-medium">⚡ Chọn nhanh:</span>
+                  <button type="button" onclick="window.__setDeadlinePreset('today')" class="px-3 py-1 rounded-xl bg-white hover:bg-amber-100 text-amber-900 border border-amber-200 transition-colors shadow-xs cursor-pointer">
+                    Hôm nay 23:59
+                  </button>
+                  <button type="button" onclick="window.__setDeadlinePreset('3days')" class="px-3 py-1 rounded-xl bg-white hover:bg-amber-100 text-amber-900 border border-amber-200 transition-colors shadow-xs cursor-pointer">
+                    +3 Ngày (23:59)
+                  </button>
+                  <button type="button" onclick="window.__setDeadlinePreset('7days')" class="px-3 py-1 rounded-xl bg-white hover:bg-amber-100 text-amber-900 border border-amber-200 transition-colors shadow-xs cursor-pointer">
+                    +7 Ngày (1 tuần)
+                  </button>
+                  <button type="button" onclick="window.__setDeadlinePreset('now')" class="px-3 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors shadow-xs cursor-pointer">
+                    🛑 Đóng cổng ngay
+                  </button>
                 </div>
               </div>
 
@@ -543,12 +643,12 @@
                   </div>
                   
                   <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" id="btn-open-import-modal" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" id="btn-open-import-modal" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
                       <span>📥</span>
                       <span>Nhập CSV</span>
                     </button>
 
-                    <select id="admin-filter-slot-dept" class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none">
+                    <select id="admin-filter-slot-dept" class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none cursor-pointer">
                       <option value="all">Tất cả các ban</option>
                     </select>
 
@@ -558,7 +658,7 @@
 
                     <!-- Dropdown Menu Tùy Chọn -->
                     <div class="relative inline-block text-left" id="slot-actions-dropdown-container">
-                      <button type="button" id="btn-slot-actions-dropdown" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1.5 shadow-sm">
+                      <button type="button" id="btn-slot-actions-dropdown" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
                         <span>⚙️ Tùy chọn</span>
                         <span class="text-[10px] text-slate-400">▼</span>
                       </button>
@@ -629,7 +729,7 @@
                     <input type="text" id="admin-cand-search" placeholder="Tìm tên, MSV, mã đơn..." 
                       class="px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none w-48">
 
-                    <select id="admin-cand-filter-dept" class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none">
+                    <select id="admin-cand-filter-dept" class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none cursor-pointer">
                       <option value="all">Tất cả các ban</option>
                     </select>
                   </div>
@@ -655,8 +755,7 @@
               </div>
             </div>
 
-            <!-- PANE 4: TAB CHECK-IN & PASS/FAIL (Protected for Department Leads) -->
-            <!-- PANE 4: TAB INTERVIEW DETAILS & CHECK-IN -->
+            <!-- PANE 4: TAB CHECK-IN & PASS/FAIL -->
             <div id="admin-pane-checkin" class="admin-tab-pane hidden space-y-6 animate-fade-in">
               <div id="admin-checkin-workspace-box" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-5">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -675,7 +774,7 @@
                   <!-- Injected dynamically -->
                 </div>
 
-                <!-- 2-Tier Modern Filter: Date & Shift Pills (Single line, no wrapping) -->
+                <!-- 2-Tier Modern Filter: Date & Shift Pills -->
                 <div class="space-y-2.5 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
                   <!-- Row 1: Chọn ngày -->
                   <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-0.5 scrollbar-thin">
@@ -715,7 +814,7 @@
               </div>
             </div>
 
-            <!-- PANE 5: TAB AUDIT LOGS (Ban Chủ Nhiệm & Mentor) -->
+            <!-- PANE 5: TAB AUDIT LOGS -->
             <div id="admin-pane-audit" class="admin-tab-pane hidden space-y-6 animate-fade-in">
               <div id="admin-audit-logs-box" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
                 <div>
@@ -740,15 +839,20 @@
                   </table>
                 </div>
               </div>
-      </div> <!-- End #admin-dashboard-view -->
+            </div>
+
+          </main>
+        </div>
+      </div>
     </section>
 
   </main>
+
   <!-- ==================== MODALS ==================== -->
 
   <!-- 0. JD Modal -->
-  <div id="jd-modal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8 animate-fade-in border border-slate-100">
+  <div id="jd-modal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 my-8 animate-fade-in border border-slate-200 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 pb-4">
         <div class="flex items-center gap-3">
           <img src="images/mcc-logo.png" alt="MCC Logo" class="w-10 h-10 object-contain rounded-xl bg-slate-50 p-1 border border-slate-200">
@@ -757,7 +861,7 @@
             <h3 id="jd-dept-name" class="text-xl font-black text-slate-900">Ban Chuyên Môn</h3>
           </div>
         </div>
-        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
       <div class="space-y-4 text-xs text-slate-700 max-h-[65vh] overflow-y-auto pr-2">
@@ -783,15 +887,15 @@
       </div>
 
       <div class="pt-3 flex justify-end border-t border-slate-100">
-        <button type="button" class="close-modal-btn px-5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700">Đóng</button>
+        <button type="button" class="close-modal-btn px-5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">Đóng</button>
       </div>
     </div>
   </div>
 
   <!-- 1. Success Registration Modal -->
-  <div id="success-modal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 text-center animate-fade-in border border-slate-100">
-      <img src="images/mcc-logo.png" alt="MCC Logo" class="w-20 h-20 object-contain mx-auto drop-shadow-md">
+  <div id="success-modal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 text-center animate-fade-in border border-slate-200 shadow-2xl">
+      <img src="images/mcc-logo.png" alt="MCC Logo" class="w-20 h-20 object-contain mx-auto drop-shadow-xs">
       <div>
         <span id="success-modal-badge" class="text-[10px] font-black uppercase tracking-wider text-orange-600">Đăng Ký Thành Công</span>
         <h3 id="success-modal-title" class="text-2xl font-black text-slate-900 mt-1">Hẹn Gặp Bạn Tại Buổi Phỏng Vấn!</h3>
@@ -802,113 +906,113 @@
         <!-- Injected dynamically -->
       </div>
 
-      <button type="button" class="close-modal-btn w-full py-3 text-xs font-bold rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+      <button type="button" class="close-modal-btn w-full py-3 text-xs font-bold rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors">
         Hoàn Tất & Đóng Cửa Sổ
       </button>
     </div>
   </div>
 
   <!-- 2. Admin Create Campaign Modal -->
-  <div id="modal-create-campaign" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 my-8 animate-fade-in">
+  <div id="modal-create-campaign" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 my-8 animate-fade-in shadow-2xl border border-slate-200">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <h3 class="text-lg font-black text-slate-900">Tạo đợt tuyển mới</h3>
         </div>
-        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
       <form id="form-create-campaign" class="space-y-4 text-xs">
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Tên Đợt Tuyển *</label>
+          <label class="block font-bold text-slate-700 mb-1.5">Tên Đợt Tuyển *</label>
           <input type="text" id="camp-name" placeholder="Tuyển Quân Gen XVI - FRAMEJUMP" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Thế Hệ (Gen) *</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Thế Hệ (Gen) *</label>
             <input type="text" id="camp-gen" placeholder="Gen XVI" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Năm Học *</label>
-            <input type="text" id="camp-year" value="2025 - 2026" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
+            <label class="block font-bold text-slate-700 mb-1.5">Năm Học *</label>
+            <input type="text" id="camp-year" value="2026 - 2027" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
           </div>
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Hạn Chót Đăng Ký (Deadline) *</label>
+          <label class="block font-bold text-slate-700 mb-1.5">Hạn Chót Đăng Ký (Deadline) *</label>
           <input type="datetime-local" id="camp-deadline" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none font-bold">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Từ Ngày Phỏng Vấn *</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Từ Ngày Phỏng Vấn *</label>
             <input type="date" id="camp-start-date" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Đến Ngày *</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Đến Ngày *</label>
             <input type="date" id="camp-end-date" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
           </div>
         </div>
 
         <div class="flex items-center gap-2 pt-2">
-          <input type="checkbox" id="camp-set-active" checked class="rounded text-orange-600">
-          <label for="camp-set-active" class="font-bold text-slate-800">Đặt làm mùa tuyển Active ngay lập tức</label>
+          <input type="checkbox" id="camp-set-active" checked class="rounded text-orange-600 cursor-pointer">
+          <label for="camp-set-active" class="font-bold text-slate-800 cursor-pointer">Đặt làm mùa tuyển Active ngay lập tức</label>
         </div>
 
         <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
-          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl">Hủy</button>
-          <button type="submit" class="px-6 py-2 bg-orange-600 text-white font-bold rounded-xl shadow-md">Tạo Mùa Mới</button>
+          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl cursor-pointer">Hủy</button>
+          <button type="submit" class="px-6 py-2 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold rounded-xl shadow-xs cursor-pointer">Tạo Mùa Mới</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 4. Admin Import Slots CSV Modal -->
-  <div id="modal-import-slots" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 my-8 animate-fade-in">
+  <!-- 3. Admin Import Slots CSV Modal -->
+  <div id="modal-import-slots" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 my-8 animate-fade-in shadow-2xl border border-slate-200">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">Tự Động Kiểm Tra Va Chạm Lịch</span>
           <h3 class="text-lg font-black text-slate-900">Import Ca Phỏng Vấn Từ CSV</h3>
         </div>
-        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
       <div class="space-y-3 text-xs text-slate-600">
         <p>Hệ thống sẽ <strong>tự động phát hiện và chặn lỗi</strong> nếu một người phỏng vấn bị xếp vào 2 ca bị overlap thời gian trên cùng 1 ngày.</p>
         <div class="flex flex-wrap items-center gap-3">
           <input type="file" id="import-csv-file-input" accept=".csv" class="hidden">
-          <button type="button" id="btn-pick-csv-file" class="px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold flex items-center gap-1.5 transition-all">
+          <button type="button" id="btn-pick-csv-file" class="px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold flex items-center gap-1.5 transition-all cursor-pointer">
             📁 Chọn file CSV từ máy tính
           </button>
-          <button type="button" id="btn-download-csv-template" class="text-indigo-600 hover:underline font-bold">📥 Tải file mẫu CSV</button>
+          <button type="button" id="btn-download-csv-template" class="text-indigo-600 hover:underline font-bold cursor-pointer">📥 Tải file mẫu CSV</button>
         </div>
       </div>
 
       <form id="form-import-csv" class="space-y-4 text-xs">
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Hoặc dán nội dung CSV vào đây:</label>
-          <textarea id="import-csv-textarea" rows="6" placeholder="DepartmentId,Date,StartTime,EndTime,Capacity,Location,Type,MeetUrl,Interviewers&#10;media,2026-09-05,08:00,10:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh&#10;media,2026-09-05,10:00,12:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh&#10;media,2026-09-05,14:00,16:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh&#10;media,2026-09-05,16:00,17:30,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh" required
-            class="w-full font-mono text-[11px] p-3 rounded-2xl border border-slate-200 outline-none"></textarea>
+          <label class="block font-bold text-slate-700 mb-1.5">Hoặc dán nội dung CSV vào đây:</label>
+          <textarea id="import-csv-textarea" rows="6" placeholder="DepartmentId,Date,StartTime,EndTime,Capacity,Location,Type,MeetUrl,Interviewers&#10;media,2026-09-05,08:00,10:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh&#10;media,2026-09-05,10:00,12:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh" required
+            class="w-full font-mono text-[11px] p-3 rounded-xl border border-slate-200 outline-none bg-slate-50"></textarea>
         </div>
 
         <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
-          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl">Hủy</button>
-          <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md">⚡ Bắt Đầu Import & Kiểm Tra</button>
+          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl cursor-pointer">Hủy</button>
+          <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs cursor-pointer">⚡ Bắt Đầu Import & Kiểm Tra</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 5. Admin Manual Override Modal (With Mandatory Reason) -->
-  <div id="modal-admin-override" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-fade-in text-xs">
+  <!-- 4. Admin Manual Override Modal -->
+  <div id="modal-admin-override" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 animate-fade-in text-xs shadow-2xl border border-slate-200">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <span class="text-[10px] font-black uppercase tracking-wider text-rose-600">Can Thiệp Thủ Công (Lưu Lịch Sử)</span>
           <h3 class="text-lg font-black text-slate-900">Admin Đổi / Hủy Ca Cho Ứng Viên</h3>
         </div>
-        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
       <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
@@ -919,34 +1023,34 @@
 
       <form id="form-admin-override" class="space-y-4">
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Chọn Ca Phỏng Vấn Mới (Cùng ban, còn chỗ):</label>
-          <select id="override-new-slot-select" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none font-bold">
+          <label class="block font-bold text-slate-700 mb-1.5">Chọn Ca Phỏng Vấn Mới (Cùng ban, còn chỗ):</label>
+          <select id="override-new-slot-select" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none font-bold cursor-pointer">
             <!-- Injected dynamically -->
           </select>
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Lý Do Can Thiệp (Bắt buộc để lưu lịch sử hoạt động) *:</label>
+          <label class="block font-bold text-slate-700 mb-1.5">Lý Do Can Thiệp (Bắt buộc để lưu lịch sử hoạt động) *:</label>
           <textarea id="override-reason" rows="2" placeholder="Ví dụ: Ứng viên gọi hotline xin đổi ca do trùng lịch thi..." required
             class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none"></textarea>
         </div>
 
         <div class="pt-3 flex justify-between items-center border-t border-slate-100">
-          <button type="button" id="btn-override-cancel-reg" class="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-xl font-bold transition-all">
+          <button type="button" id="btn-override-cancel-reg" class="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-xl font-bold transition-all cursor-pointer">
             Hủy Đăng Ký Này
           </button>
           <div class="flex gap-2">
-            <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl">Đóng</button>
-            <button type="submit" class="px-6 py-2 bg-orange-600 text-white font-bold rounded-xl shadow-md">💾 Lưu Thay Đổi</button>
+            <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 rounded-xl cursor-pointer">Đóng</button>
+            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold rounded-xl shadow-xs cursor-pointer">💾 Lưu Thay Đổi</button>
           </div>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 6. Waitlist Detail Modal for Admin -->
-  <div id="modal-waitlist-detail" class="modal-backdrop fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-fade-in text-xs border border-amber-200">
+  <!-- 5. Waitlist Detail Modal -->
+  <div id="modal-waitlist-detail" class="modal-backdrop fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 animate-fade-in text-xs border border-amber-200 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
           <span class="p-2 rounded-2xl bg-amber-100 text-amber-900 text-base">⏳</span>
@@ -955,7 +1059,7 @@
             <p id="waitlist-modal-slot-title" class="text-xs text-slate-500 font-medium">Ban Truyền Thông • Ca 1 (08:00 - 10:00)</p>
           </div>
         </div>
-        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
       <div id="waitlist-modal-candidates-list" class="space-y-3 max-h-96 overflow-y-auto">
@@ -963,16 +1067,16 @@
       </div>
 
       <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
-        <button type="button" class="close-modal-btn px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">
+        <button type="button" class="close-modal-btn px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer">
           Đóng Cửa Sổ
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 7. Admin Profile Settings Modal (Đổi tên & Mật khẩu) -->
-  <div id="modal-admin-profile" class="modal-backdrop fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-fade-in text-xs border border-orange-200">
+  <!-- 6. Admin Profile Settings Modal -->
+  <div id="modal-admin-profile" class="modal-backdrop fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 animate-fade-in text-xs border border-slate-200 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
           <span class="p-2 rounded-2xl bg-orange-100 text-orange-700 text-base">⚙️</span>
@@ -981,26 +1085,26 @@
             <p class="text-xs text-slate-500 font-medium">Đổi tên hiển thị và mật khẩu đăng nhập</p>
           </div>
         </div>
-        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700">✕</button>
+        <button type="button" class="close-modal-btn p-2 rounded-xl text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
       <form id="form-update-admin-profile" class="space-y-4">
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Tài khoản đăng nhập (Email)</label>
+          <label class="block font-bold text-slate-700 mb-1.5">Tài khoản đăng nhập (Email)</label>
           <input type="text" id="profile-admin-username" readonly disabled
             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-mono font-bold cursor-not-allowed">
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Vai trò & Phân quyền</label>
+          <label class="block font-bold text-slate-700 mb-1.5">Vai trò & Phân quyền</label>
           <input type="text" id="profile-admin-role" readonly disabled
             class="w-full px-3.5 py-2.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-800 font-bold cursor-not-allowed">
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Họ và tên hiển thị *</label>
+          <label class="block font-bold text-slate-700 mb-1.5">Họ và tên hiển thị *</label>
           <input type="text" id="profile-admin-fullname" required placeholder="Nguyễn Văn A"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none font-bold">
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-bold">
         </div>
 
         <div class="border-t border-slate-100 pt-3 space-y-3">
@@ -1010,38 +1114,38 @@
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Mật khẩu hiện tại</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Mật khẩu hiện tại</label>
             <div class="relative">
               <input type="password" id="profile-admin-curr-pass" placeholder="••••••••"
-                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
-              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs" data-target="profile-admin-curr-pass">👁️</button>
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none">
+              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs cursor-pointer" data-target="profile-admin-curr-pass">👁️</button>
             </div>
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Mật khẩu mới</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Mật khẩu mới</label>
             <div class="relative">
               <input type="password" id="profile-admin-new-pass" placeholder="Tối thiểu 4 ký tự"
-                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
-              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs" data-target="profile-admin-new-pass">👁️</button>
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none">
+              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs cursor-pointer" data-target="profile-admin-new-pass">👁️</button>
             </div>
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Xác nhận mật khẩu mới</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Xác nhận mật khẩu mới</label>
             <div class="relative">
               <input type="password" id="profile-admin-confirm-pass" placeholder="Nhập lại mật khẩu mới"
-                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none">
-              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs" data-target="profile-admin-confirm-pass">👁️</button>
+                class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none">
+              <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs cursor-pointer" data-target="profile-admin-confirm-pass">👁️</button>
             </div>
           </div>
         </div>
 
         <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
-          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold">
+          <button type="button" class="close-modal-btn px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold cursor-pointer">
             Hủy
           </button>
-          <button type="submit" class="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl shadow-lg shadow-orange-600/30 transition-all flex items-center gap-1.5">
+          <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
             💾 Lưu Thay Đổi
           </button>
         </div>
@@ -1049,13 +1153,13 @@
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- FOOTER -->
   <footer class="mt-auto bg-white border-t border-slate-200 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
       <div class="flex items-center gap-3">
-        <img src="images/mcc-logo.png" alt="MCC Logo" class="w-10 h-10 object-contain rounded-xl bg-white p-0.5 shadow-sm border border-slate-200">
+        <img src="images/mcc-logo.png" alt="MCC Logo" class="w-10 h-10 object-contain rounded-xl bg-white p-0.5 shadow-xs border border-slate-200">
         <div>
-          <p class="font-bold text-slate-800">CLB Truyền Thông MCC - Trường ĐH Kinh tế, ĐHQGHN</p>
+          <p class="font-bold text-slate-800">CLB Truyền Thông MCC — Trường ĐH Kinh tế, ĐHQGHN</p>
           <p class="text-slate-400">144 Xuân Thủy, Cầu Giấy, Hà Nội • Email: mcc.ueb.vnu@gmail.com</p>
         </div>
       </div>
@@ -1064,12 +1168,16 @@
           Facebook: fb.com/MCC.UEB ↗
         </a>
         <span>•</span>
-        <span class="text-slate-400 font-semibold">Recruitment Portal</span>
+        <span class="text-slate-400 font-semibold font-mono">FRAMEJUMP GEN XVI</span>
       </div>
     </div>
   </footer>
 
   <!-- Scripts -->
+  <!-- Firebase App & Cloud Firestore SDKs (Real-time Cloud Sync) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="js/email.js"></script>
   <script src="js/store.js"></script>
