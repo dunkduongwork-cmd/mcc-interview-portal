@@ -560,6 +560,9 @@ class Store {
           );
         }
 
+        // Tự động khởi tạo systemSettings nếu chưa có
+        parsed.systemSettings = parsed.systemSettings || { isWaitlistEnabled: true };
+
         return parsed;
       }
     } catch (e) {
@@ -573,7 +576,8 @@ class Store {
       slots: INITIAL_SLOTS,
       candidates: INITIAL_CANDIDATES,
       registrations: INITIAL_REGISTRATIONS,
-      auditLogs: INITIAL_AUDIT_LOGS
+      auditLogs: INITIAL_AUDIT_LOGS,
+      systemSettings: { isWaitlistEnabled: true }
     };
     this.saveData(defaultData);
     return defaultData;
@@ -705,9 +709,28 @@ class Store {
     return this.data.interviewers.find(iv => iv.id === id) || null;
   }
 
+  // --- SYSTEM SETTINGS & WAITLIST FEATURE TOGGLE ---
+  isWaitlistEnabled() {
+    if (!this.data || !this.data.systemSettings) return true;
+    return this.data.systemSettings.isWaitlistEnabled !== false;
+  }
+
+  setWaitlistEnabled(enabled) {
+    if (!this.data) this.data = {};
+    if (!this.data.systemSettings) this.data.systemSettings = {};
+    const flag = Boolean(enabled);
+    this.data.systemSettings.isWaitlistEnabled = flag;
+    const current = this.getCurrentAdmin();
+    this.logAudit(current?.fullName || 'admin', 'TOGGLE_WAITLIST', 'System', 'waitlist', null, { isWaitlistEnabled: flag }, `Đã ${flag ? 'BẬT' : 'TẮT'} chức năng Waitlist trên toàn bộ hệ thống`);
+    this.saveData();
+    this.notify();
+    return flag;
+  }
+
   // --- SLOTS MANAGEMENT ---
   getSlots(campaignId = null, deptId = null) {
     const campId = campaignId || this.getActiveCampaign()?.id;
+    const waitlistAllowed = this.isWaitlistEnabled();
     return this.data.slots
       .filter(s => (!campId || s.campaignId === campId) && (!deptId || deptId === 'all' || s.departmentId === deptId))
       .map(slot => {
@@ -719,7 +742,7 @@ class Store {
         const waitlistCount = waitlistRegs.length;
         const remainingCount = Math.max(0, slot.capacity - bookedCount);
         const isFull = remainingCount === 0;
-        const isWaitlistAvailable = isFull && waitlistCount < 1; // 1 waitlist spot allowed
+        const isWaitlistAvailable = waitlistAllowed && isFull && waitlistCount < 1; // 1 waitlist spot allowed if enabled
         const isEligible = (slot.interviewerIds && slot.interviewerIds.length >= 2);
 
         return {
@@ -805,7 +828,8 @@ class Store {
   }
 
   addSlot(slotData) {
-    const capacity = 2; // Strict rule: Mỗi ca chỉ cho tối đa 2 ứng viên
+    const rawCap = slotData.capacity !== undefined ? parseInt(slotData.capacity, 10) : 2;
+    const capacity = Math.min(3, Math.max(1, isNaN(rawCap) ? 2 : rawCap));
 
     const interviewerIds = Array.isArray(slotData.interviewerIds) ? slotData.interviewerIds : [];
 
@@ -823,16 +847,54 @@ class Store {
       location: slotData.location || 'Phòng 501 - Nhà E4 (UEB)',
       meetUrl: slotData.meetUrl || '',
       type: slotData.type || 'offline',
-      capacity: 2,
+      capacity: capacity,
       bookedCount: 0,
       isOpen: Boolean(slotData.isOpen && interviewerIds.length >= 2),
       interviewerIds
     };
 
     this.data.slots.push(newSlot);
-    this.logAudit('Admin', 'CREATE_SLOT', 'Slot', newSlot.id, null, newSlot, 'Tạo ca phỏng vấn mới');
+    this.logAudit('Admin', 'CREATE_SLOT', 'Slot', newSlot.id, null, newSlot, `Tạo ca phỏng vấn mới (Sức chứa: ${capacity} ứng viên)`);
     this.saveData();
     return newSlot;
+  }
+
+  updateSlotCapacity(slotId, newCapacity) {
+    const currentAdmin = this.getCurrentAdmin();
+    // Phân quyền chặt chẽ: Chỉ Ban Chủ Nhiệm và Mentor mới được đổi số lượng ứng viên trong ca!
+    const isAuthorized = currentAdmin && (currentAdmin.role === 'Ban Chủ Nhiệm' || currentAdmin.role === 'Mentor');
+    if (!isAuthorized) {
+      throw new Error('Chỉ Ban Chủ Nhiệm và Mentor mới có quyền thay đổi số lượng ứng viên trong ca.');
+    }
+
+    const slot = this.data.slots.find(s => s.id === slotId);
+    if (!slot) throw new Error('Không tìm thấy ca phỏng vấn.');
+
+    const cap = parseInt(newCapacity, 10);
+    if (![1, 2, 3].includes(cap)) {
+      throw new Error('Số lượng ứng viên chỉ được phép từ 1 đến 3 ứng viên.');
+    }
+
+    const activeRegs = this.data.registrations.filter(r => r.slotId === slotId && r.status === 'confirmed');
+    if (cap < activeRegs.length) {
+      throw new Error(`Ca này hiện đã có ${activeRegs.length} ứng viên xác nhận. Không thể giảm sức chứa xuống ${cap}.`);
+    }
+
+    const oldCap = slot.capacity || 2;
+    slot.capacity = cap;
+
+    // Nếu nâng sức chứa và ca đang có hàng chờ (waitlist), tự động đôn bạn ở hàng chờ lên!
+    if (cap > oldCap) {
+      const waitlistReg = this.data.registrations.find(r => r.slotId === slotId && r.status === 'waitlist');
+      if (waitlistReg) {
+        waitlistReg.status = 'confirmed';
+        this.logAudit(currentAdmin.fullName, 'PROMOTE_WAITLIST', 'Registration', waitlistReg.id, null, waitlistReg, `Tự động đôn ứng viên chờ lên chính thức khi nâng sức chứa ca lên ${cap}`);
+      }
+    }
+
+    this.saveData();
+    this.logAudit(currentAdmin.fullName, 'UPDATE_SLOT_CAPACITY', 'Slot', slotId, { capacity: oldCap }, { capacity: cap }, `Đổi sức chứa ca từ ${oldCap} thành ${cap} ứng viên`);
+    return slot;
   }
 
   deleteSlot(slotId) {
@@ -1129,6 +1191,34 @@ class Store {
       throw new Error('Không tìm thấy hồ sơ đăng ký khớp với MSV và Email đã nhập.');
     }
 
+    // --- BẢO VỆ HẠN MỨC EMAILJS (ANTI-SPAM RATE LIMITING) ---
+    if (!this.otpRateLimit) this.otpRateLimit = {};
+    const now = Date.now();
+    const rate = this.otpRateLimit[cleanMail] || { count: 0, firstAttemptAt: now, lastAttemptAt: 0 };
+
+    // 1. Cooldown bắt buộc tối thiểu 60 giây giữa 2 lần bấm
+    const timeSinceLast = (now - rate.lastAttemptAt) / 1000;
+    if (rate.lastAttemptAt > 0 && timeSinceLast < 60) {
+      const waitSec = Math.ceil(60 - timeSinceLast);
+      throw new Error(`Vui lòng chờ ${waitSec} giây nữa trước khi yêu cầu gửi lại mã OTP.`);
+    }
+
+    // 2. Reset cửa sổ sau 15 phút
+    if (now - rate.firstAttemptAt > 15 * 60 * 1000) {
+      rate.count = 0;
+      rate.firstAttemptAt = now;
+    }
+
+    // 3. Khóa cứng tối đa 3 lần / 15 phút trên mỗi Email/MSV để chống cạn kiệt Quota
+    if (rate.count >= 3) {
+      const waitMin = Math.ceil((15 * 60 * 1000 - (now - rate.firstAttemptAt)) / (60 * 1000));
+      throw new Error(`Bạn đã yêu cầu OTP 3 lần trong thời gian ngắn. Để bảo vệ hòm thư CLB, vui lòng thử lại sau ${waitMin} phút hoặc liên hệ Ban Tuyển Quân.`);
+    }
+
+    rate.count++;
+    rate.lastAttemptAt = now;
+    this.otpRateLimit[cleanMail] = rate;
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
@@ -1139,7 +1229,7 @@ class Store {
       email: cleanMail,
       candidate: cand,
       message: `Mã OTP đã được gửi đến email ${cleanMail}.`,
-      previewOtp: otp // Included for simulation demo
+      otpCode: otp // Truyền vào EmailService gửi ngầm, không lộ ra UI hay log
     };
   }
 
@@ -1273,55 +1363,11 @@ class Store {
     return reg;
   }
 
-  // --- SCORING & EVALUATION ---
-  saveEvaluation(registrationId, evalData) {
-    const reg = this.data.registrations.find(r => r.id === registrationId);
-    if (!reg) throw new Error('Không tìm thấy thông tin đăng ký.');
-
-    const comm = Number(evalData.communicationScore) || 0;
-    const tech = Number(evalData.technicalScore) || 0;
-    const cult = Number(evalData.cultureScore) || 0;
-    const commt = Number(evalData.commitmentScore) || 0;
-    const avg = Number(((comm + tech + cult + commt) / 4).toFixed(1));
-
-    reg.evaluation = {
-      interviewer: evalData.interviewer || 'Hội đồng Phỏng vấn MCC',
-      communicationScore: comm,
-      technicalScore: tech,
-      cultureScore: cult,
-      commitmentScore: commt,
-      averageScore: avg,
-      strengths: evalData.strengths || '',
-      weaknesses: evalData.weaknesses || '',
-      notes: evalData.notes || '',
-      result: evalData.result || 'hold',
-      evaluatedAt: new Date().toISOString()
-    };
-
-    if (reg.checkInStatus === 'pending') {
-      reg.checkInStatus = 'checked-in';
-    }
-
-    this.saveData();
-    return reg;
-  }
-
+  // --- ĐIỂM DANH ỨNG VIÊN (CHECK-IN) ---
   updateCheckInStatus(registrationId, status) {
     const reg = this.data.registrations.find(r => r.id === registrationId);
     if (!reg) throw new Error('Không tìm thấy đăng ký.');
     reg.checkInStatus = status;
-    this.saveData();
-    return reg;
-  }
-
-  updateInterviewResult(registrationId, result) {
-    const reg = this.data.registrations.find(r => r.id === registrationId);
-    if (!reg) throw new Error('Không tìm thấy đăng ký.');
-    reg.result = result; // 'pass', 'fail', 'hold', 'unreviewed'
-    const cand = this.data.candidates.find(c => c.id === reg.candidateId);
-    const dept = this.getDepartmentById(reg.departmentId);
-    const admin = this.getCurrentAdmin();
-    this.logAudit(admin ? admin.fullName : 'Trưởng Ban', 'UPDATE_RESULT', 'Registration', registrationId, null, { result }, `Đánh giá kết quả [${result === 'pass' ? 'ĐẠT (PASS)' : result === 'fail' ? 'LOẠI (FAIL)' : result === 'hold' ? 'DỰ BỊ' : 'CHƯA XÉT'}] cho ${cand ? cand.fullName : ''} (${dept ? dept.name : ''})`);
     this.saveData();
     return reg;
   }
@@ -1392,184 +1438,409 @@ class Store {
 }
 
 window.appStore = new Store();
-// Pre-configured Admin Accounts with Strict RBAC (Ban Chủ Nhiệm + Mentor + 6 Trưởng Ban)
+// Danh mục quyền và thông tin vai trò Admin (KHÔNG CHỨA MẬT KHẨU THÔ)
+// --- DANH SÁCH TÀI KHOẢN QUẢN TRỊ ĐÃ ĐƯỢC XÁC THỰC TRÊN GOOGLE FIREBASE ---
 const INITIAL_ADMINS = [
+  // --- 0. TÀI KHOẢN ADMIN TỔNG (FULL QUYỀN + TÙY CHỌN HỆ THỐNG) ---
   {
-    id: 'adm-1',
-    username: 'banchunhiem.mcc@gmail.com',
-    password: 'mcc@admin2026',
-    fullName: 'Nguyễn Việt Hoàng',
-    role: 'Chủ Nhiệm CLB',
+    id: 'adm-root-admin',
+    username: 'admin.mcc@gmail.com',
+    fullName: 'admin',
+    role: 'Admin',
+    avatar: '⚡',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+
+  // --- 1. BAN CHỦ NHIỆM (3 THÀNH VIÊN - FULL QUYỀN) ---
+  {
+    id: 'adm-bcn-1',
+    username: 'nguyenkieuanh.mcc@gmail.com',
+    fullName: 'Nguyễn Kiều Anh',
+    role: 'Ban Chủ Nhiệm',
     avatar: '👑',
-    deptId: 'all'
+    deptId: 'all',
+    hasFullAccess: true
   },
   {
-    id: 'adm-mentor',
-    username: 'mentor.mcc@gmail.com',
-    password: 'mentor@mcc2026',
-    fullName: 'Mentor MCC',
+    id: 'adm-bcn-2',
+    username: 'nguyennhatlinh.mcc@gmail.com',
+    fullName: 'Nguyễn Nhật Linh',
+    role: 'Ban Chủ Nhiệm',
+    avatar: '👑',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-bcn-3',
+    username: 'hoduongkhanhvy.mcc@gmail.com',
+    fullName: 'Hồ Dương Khánh Vy',
+    role: 'Ban Chủ Nhiệm',
+    avatar: '👑',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-bcn-shared',
+    username: 'banchunhiem.mcc@gmail.com',
+    fullName: 'Ban Chủ Nhiệm',
+    role: 'Ban Chủ Nhiệm',
+    avatar: '👑',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+
+  // --- 2. MENTOR (5 THÀNH VIÊN - FULL QUYỀN) ---
+  {
+    id: 'adm-mentor-1',
+    username: 'phambaonguyen.mcc@gmail.com',
+    fullName: 'Phạm Bảo Nguyên',
     role: 'Mentor',
     avatar: '🎖️',
     deptId: 'all',
-    isMentor: true
+    hasFullAccess: true
   },
+  {
+    id: 'adm-mentor-2',
+    username: 'nguyenhuonglinh.mcc@gmail.com',
+    fullName: 'Nguyễn Hương Linh',
+    role: 'Mentor',
+    avatar: '🎖️',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-mentor-3',
+    username: 'nguyenhoanganh.mcc@gmail.com',
+    fullName: 'Nguyễn Hoàng Anh',
+    role: 'Mentor',
+    avatar: '🎖️',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-mentor-4',
+    username: 'nguyenphuonganh.mentor.mcc@gmail.com',
+    fullName: 'Nguyễn Phương Anh',
+    role: 'Mentor',
+    avatar: '🎖️',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-mentor-5',
+    username: 'nguyenngocanh.mcc@gmail.com',
+    fullName: 'Nguyễn Ngọc Anh',
+    role: 'Mentor',
+    avatar: '🎖️',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-mentor-shared',
+    username: 'mentor.mcc@gmail.com',
+    fullName: 'Mentor',
+    role: 'Mentor',
+    avatar: '🎖️',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+
+  // --- 3. BAN NHÂN SỰ (13 THÀNH VIÊN - FULL QUYỀN) ---
+  {
+    id: 'adm-hr-1',
+    username: 'nguyenkhanhlinh.mcc@gmail.com',
+    fullName: 'Nguyễn Khánh Linh',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-2',
+    username: 'nguyendangduong.mcc@gmail.com',
+    fullName: 'Nguyễn Đăng Dương',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-3',
+    username: 'nguyenphuongthao.mcc@gmail.com',
+    fullName: 'Nguyễn Phương Thảo',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-4',
+    username: 'nguyenphuonganh.hr.mcc@gmail.com',
+    fullName: 'Nguyễn Phương Anh',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-5',
+    username: 'luugialinh.mcc@gmail.com',
+    fullName: 'Lưu Gia Linh',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-6',
+    username: 'doanthiminhthu.mcc@gmail.com',
+    fullName: 'Đoàn Thị Minh Thư',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-7',
+    username: 'vuphuongthuylinh.mcc@gmail.com',
+    fullName: 'Vũ Phương Thuỳ Linh',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-8',
+    username: 'tranthicamtu.mcc@gmail.com',
+    fullName: 'Trần Thị Cẩm Tú',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-9',
+    username: 'dangquangdung.mcc@gmail.com',
+    fullName: 'Đặng Quang Dũng',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-10',
+    username: 'phamthithuhuyen.mcc@gmail.com',
+    fullName: 'Phạm Thị Thu Huyền',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-11',
+    username: 'nguyenphuongnhi.mcc@gmail.com',
+    fullName: 'Nguyễn Phương Nhi',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-12',
+    username: 'luyenminhanh.mcc@gmail.com',
+    fullName: 'Luyện Minh Anh',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-13',
+    username: 'tranleducanh.mcc@gmail.com',
+    fullName: 'Trần Lê Đức Anh',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+  {
+    id: 'adm-hr-shared',
+    username: 'bannhansu.mcc@gmail.com',
+    fullName: 'Ban Nhân Sự',
+    role: 'Ban Nhân Sự',
+    avatar: '📋',
+    deptId: 'all',
+    hasFullAccess: true
+  },
+
+  // --- 4. 5 BAN CHUYÊN MÔN (CHỈ HIỂN THỊ TÊN BAN, XEM LỊCH + ỨNG VIÊN & ĐIỂM DANH BAN MÌNH) ---
   {
     id: 'adm-media',
     username: 'bantruyenthong.mcc@gmail.com',
-    password: 'media@mcc2026',
-    fullName: 'Trần Thảo Linh',
-    role: 'Trưởng Ban Truyền Thông',
+    fullName: 'Ban Truyền Thông',
+    role: '',
     avatar: '🎨',
-    deptId: 'media'
+    deptId: 'media',
+    hasFullAccess: false
   },
   {
     id: 'adm-events',
     username: 'bansukien.mcc@gmail.com',
-    password: 'events@mcc2026',
-    fullName: 'Vũ Minh Tuấn',
-    role: 'Trưởng Ban Sự Kiện',
+    fullName: 'Ban Sự Kiện',
+    role: '',
     avatar: '🎉',
-    deptId: 'events'
+    deptId: 'events',
+    hasFullAccess: false
   },
   {
     id: 'adm-tech',
     username: 'bankythuat.mcc@gmail.com',
-    password: 'tech@mcc2026',
-    fullName: 'Đặng Quang Minh',
-    role: 'Trưởng Ban Kỹ Thuật',
+    fullName: 'Ban Kỹ Thuật',
+    role: '',
     avatar: '💻',
-    deptId: 'tech'
+    deptId: 'tech',
+    hasFullAccess: false
   },
   {
     id: 'adm-projects',
     username: 'banduan.mcc@gmail.com',
-    password: 'projects@mcc2026',
-    fullName: 'Trịnh Hoài Nam',
-    role: 'Trưởng Ban Dự Án',
+    fullName: 'Ban Dự Án',
+    role: '',
     avatar: '🚀',
-    deptId: 'projects'
+    deptId: 'projects',
+    hasFullAccess: false
   },
   {
     id: 'adm-relations',
     username: 'bandoingoai.mcc@gmail.com',
-    password: 'relations@mcc2026',
-    fullName: 'Hoàng Phương Mai',
-    role: 'Trưởng Ban Đối Ngoại',
+    fullName: 'Ban Đối Ngoại',
+    role: '',
     avatar: '🤝',
-    deptId: 'relations'
-  },
-  {
-    id: 'adm-hr',
-    username: 'bannhansu.mcc@gmail.com',
-    password: 'hr@mcc2026',
-    fullName: 'Bùi Minh Đức',
-    role: 'Trưởng Ban Nhân Sự',
-    avatar: '📋',
-    deptId: 'hr'
+    deptId: 'relations',
+    hasFullAccess: false
   }
 ];
 
-// Extend Store with Admin Authentication methods
+// Quản lý danh mục quản trị viên (KHÔNG CHỨA MẬT KHẨU THÔ - 100% BẢO MẬT TRÊN FIREBASE AUTH)
 Store.prototype.getAdmins = function() {
-  if (!this.data.admins || !Array.isArray(this.data.admins) || this.data.admins.length === 0) {
-    this.data.admins = JSON.parse(JSON.stringify(INITIAL_ADMINS));
-    this.saveData();
-  }
+  this.data.admins = JSON.parse(JSON.stringify(INITIAL_ADMINS));
   return this.data.admins;
 };
 
-Store.prototype.updateAdminProfile = function(adminId, { fullName, currentPassword, newPassword }) {
-  const admins = this.getAdmins();
-  const admin = admins.find(a => a.id === adminId);
-  if (!admin) {
-    throw new Error('Không tìm thấy tài khoản quản trị.');
-  }
-
-  // Đổi mật khẩu nếu có nhập mật khẩu mới
-  if (newPassword && newPassword.trim()) {
-    if (!currentPassword || currentPassword.trim() !== admin.password) {
-      throw new Error('Mật khẩu hiện tại không chính xác.');
+Store.prototype.updateAdminProfile = async function(adminId, { currentPassword, newPassword }) {
+  if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+    const user = firebase.auth().currentUser;
+    try {
+      // Xác thực lại với mật khẩu hiện tại trước khi đổi
+      const cred = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+      await user.reauthenticateWithCredential(cred);
+      await user.updatePassword(newPassword);
+    } catch (err) {
+      if (err.code === 'auth/wrong-password') throw new Error('Mật khẩu hiện tại không chính xác.');
+      if (err.code === 'auth/weak-password') throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự.');
+      throw new Error(err.message || 'Không thể đổi mật khẩu trên Firebase.');
     }
-    if (newPassword.trim().length < 4) {
-      throw new Error('Mật khẩu mới phải có tối thiểu 4 ký tự.');
-    }
-    admin.password = newPassword.trim();
   }
 
-  // Đổi tên hiển thị
-  if (fullName && fullName.trim()) {
-    admin.fullName = fullName.trim();
-  }
-
-  this.saveData();
-
-  // Đồng bộ lại session hiện tại
-  const session = this.getCurrentAdmin();
-  if (session && session.id === admin.id) {
-    session.fullName = admin.fullName;
-    sessionStorage.setItem('MCC_ADMIN_SESSION', JSON.stringify(session));
-  }
-
-  this.logAudit(admin.fullName, 'UPDATE_PROFILE', 'Admin', admin.id, null, {
-    fullName: admin.fullName,
-    passwordChanged: Boolean(newPassword && newPassword.trim())
-  }, 'Cập nhật tên hiển thị / mật khẩu tài khoản');
-
-  this.saveData();
-  return admin;
+  const current = this.getCurrentAdmin();
+  this.logAudit(current?.fullName || 'Admin', 'UPDATE_PROFILE', 'Admin', adminId, null, null, 'Đổi mật khẩu tài khoản thành công');
 };
 
-Store.prototype.authenticateAdmin = function(username, password) {
-  const admins = this.getAdmins();
+Store.prototype.authenticateAdmin = async function(username, password) {
   const cleanU = (username || '').trim().toLowerCase();
   const cleanP = (password || '').trim();
-  const found = admins.find(a => a.username.toLowerCase() === cleanU && a.password === cleanP);
-  if (!found) {
-    throw new Error('Tài khoản hoặc mật khẩu quản trị không chính xác.');
+
+  if (!cleanU || !cleanP) {
+    throw new Error('Vui lòng nhập đầy đủ Email và Mật khẩu quản trị.');
   }
 
-  const session = {
-    id: found.id,
-    username: found.username,
-    fullName: found.fullName,
-    role: found.role,
-    avatar: found.avatar,
-    deptId: found.deptId,
-    isMentor: Boolean(found.isMentor),
-    loggedInAt: new Date().toISOString()
-  };
+  // 1. Kiểm tra tài khoản có nằm trong Danh Sách Trắng 26 người của CLB hay không
+  const admins = this.getAdmins();
+  const profile = admins.find(a => a.username.toLowerCase() === cleanU);
 
-  sessionStorage.setItem('MCC_ADMIN_SESSION', JSON.stringify(session));
-  this.logAudit(found.fullName, 'ADMIN_LOGIN', 'Admin', found.id, null, { username: found.username }, 'Đăng nhập vào bảng quản trị');
-  this.saveData();
-  return session;
+  if (!profile) {
+    throw new Error('Tài khoản này không thuộc danh sách quản trị viên tuyển quân của CLB.');
+  }
+
+  // 2. Xác thực an toàn tuyệt đối qua Google Firebase Authentication
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    try {
+      const userCredential = await firebase.auth().signInWithEmailAndPassword(cleanU, cleanP);
+      const user = userCredential.user;
+
+      const session = {
+        id: profile.id,
+        uid: user.uid,
+        username: profile.username,
+        fullName: profile.fullName,
+        role: profile.role,
+        avatar: profile.avatar,
+        deptId: profile.deptId,
+        hasFullAccess: Boolean(profile.hasFullAccess),
+        isMentor: Boolean(profile.role === 'Mentor'),
+        loggedInAt: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('MCC_ADMIN_SESSION', JSON.stringify(session));
+      this.logAudit(profile.fullName, 'ADMIN_LOGIN', 'Admin', profile.id, null, { username: profile.username }, 'Đăng nhập Firebase Auth thành công');
+      return session;
+
+    } catch (err) {
+      console.warn('Firebase Auth Login Error:', err.code, err.message);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        throw new Error('Mật khẩu quản trị không chính xác.');
+      }
+      if (err.code === 'auth/user-not-found') {
+        throw new Error('Tài khoản chưa tồn tại trên Firebase.');
+      }
+      if (err.code === 'auth/too-many-requests') {
+        throw new Error('Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau vài phút.');
+      }
+      throw new Error(err.message || 'Lỗi xác thực Firebase.');
+    }
+  }
+
+  throw new Error('Dịch vụ xác thực máy chủ chưa sẵn sàng. Vui lòng kiểm tra kết nối mạng.');
 };
 
 Store.prototype.getCurrentAdmin = function() {
+  if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+    const user = firebase.auth().currentUser;
+    const cleanEmail = (user.email || '').toLowerCase();
+    const admins = this.getAdmins();
+    const profile = admins.find(a => a.username.toLowerCase() === cleanEmail);
+    if (profile) {
+      return {
+        id: profile.id,
+        uid: user.uid,
+        username: profile.username,
+        fullName: profile.fullName,
+        role: profile.role,
+        avatar: profile.avatar,
+        deptId: profile.deptId,
+        hasFullAccess: Boolean(profile.hasFullAccess),
+        isMentor: Boolean(profile.role === 'Mentor')
+      };
+    }
+  }
+
   try {
     const s = sessionStorage.getItem('MCC_ADMIN_SESSION');
-    if (!s) return null;
-    const session = JSON.parse(s);
-    // Always sync fresh role and fullName from persistent admins data
-    const fresh = this.getAdmins().find(a => a.id === session.id);
-    if (fresh) {
-      session.fullName = fresh.fullName;
-      session.role = fresh.role;
-      session.avatar = fresh.avatar;
-      session.deptId = fresh.deptId;
-      session.isMentor = Boolean(fresh.isMentor);
-    }
-    return session;
+    if (s) return JSON.parse(s);
+    return null;
   } catch (e) {
     return null;
   }
 };
 
-Store.prototype.logoutAdmin = function() {
+Store.prototype.logoutAdmin = async function() {
   const current = this.getCurrentAdmin();
   if (current) {
     this.logAudit(current.fullName, 'ADMIN_LOGOUT', 'Admin', current.id, null, null, 'Đăng xuất khỏi hệ thống');
-    this.saveData();
+  }
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    try { await firebase.auth().signOut(); } catch (e) {}
   }
   sessionStorage.removeItem('MCC_ADMIN_SESSION');
 };

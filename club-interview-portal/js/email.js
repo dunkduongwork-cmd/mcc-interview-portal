@@ -64,13 +64,15 @@ window.EmailService = {
         return { success: true, mode: 'real_email', response };
       } catch (error) {
         console.error('❌ Lỗi khi gửi qua EmailJS:', error);
+        if (error && (error.status === 412 || error.status === 429 || (error.text && error.text.includes('quota')))) {
+          window.UI?.showToast('Hạn mức gửi thư trong tháng đã đầy. Vui lòng liên hệ Hotline Ban Tuyển Quân để nhận hỗ trợ trực tiếp!', 'error');
+        }
       }
     }
 
     return {
       success: true,
-      mode: 'simulated',
-      previewOtp: otpCode
+      mode: 'fallback'
     };
   },
 

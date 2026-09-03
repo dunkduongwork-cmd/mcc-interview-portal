@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Kiểm tra quyền Admin dựa trên Firebase Authentication token
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // 1. MÙA TUYỂN (Campaigns)
+    match /campaigns/{campaignId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. CA PHỎNG VẤN (Slots)
+    match /slots/{slotId} {
+      allow read: if true;
+      allow update: if true;
+      allow create, delete: if isAdmin();
+    }
+
+    // 3. ĐƠN ĐĂNG KÝ (Registrations)
+    match /registrations/{regId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 4. HỒ SƠ ỨNG VIÊN (Candidates)
+    match /candidates/{candId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+
+    // 6. NHẬT KÝ HOẠT ĐỘNG (Audit Logs)
+    match /audit_logs/{logId} {
+      allow create: if true;
+      allow read, delete: if isAdmin();
+    }
+
+    // 7. Đồng bộ tương thích ngược
+    match /mcc_portal/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

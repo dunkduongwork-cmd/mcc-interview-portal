@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Interviewer State
   let currentInterviewerDept = 'all';
   let currentInterviewerSlotId = 'all';
-  let currentEvaluatingRegId = null;
 
   // Admin Override Target
   let currentOverrideReg = null;
@@ -644,6 +643,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  function checkDeviceOtpSpam() {
+    const KEY = 'mcc_device_otp_history';
+    const now = Date.now();
+    let history = [];
+    try {
+      history = JSON.parse(localStorage.getItem(KEY) || '[]');
+    } catch(e) { history = []; }
+
+    // Lọc các lần gửi trong vòng 10 phút qua
+    history = history.filter(t => (now - t) < 10 * 60 * 1000);
+    if (history.length >= 5) {
+      throw new Error('Thiết bị này đã yêu cầu OTP 5 lần liên tiếp. Vui lòng thử lại sau 10 phút.');
+    }
+    history.push(now);
+    try { localStorage.setItem(KEY, JSON.stringify(history)); } catch(e) {}
+  }
+
   const formReqOtp = document.getElementById('form-request-otp');
   if (formReqOtp) {
     formReqOtp.addEventListener('submit', (e) => {
@@ -652,6 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const email = document.getElementById('lookup-email').value.trim();
 
       try {
+        checkDeviceOtpSpam();
         const res = store.requestOtp(stId, email);
 
         // Kích hoạt gửi Email OTP tự động tới hòm thư sinh viên
@@ -660,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recipientEmail: res.email || email,
             candidateName: res.candidate?.fullName,
             studentId: res.candidate?.studentId || stId,
-            otpCode: res.previewOtp
+            otpCode: res.otpCode
           });
         }
 
@@ -698,13 +715,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const stId = document.getElementById('lookup-studentid').value.trim();
     const email = document.getElementById('lookup-email').value.trim();
     try {
+      checkDeviceOtpSpam();
       const res = store.requestOtp(stId, email);
       if (window.EmailService) {
         window.EmailService.sendOtpEmail({
           recipientEmail: res.email || email,
           candidateName: res.candidate?.fullName,
           studentId: res.candidate?.studentId || stId,
-          otpCode: res.previewOtp
+          otpCode: res.otpCode
         });
       }
       window.UI.showToast('Đã gửi lại mã OTP thành công!', 'success');
@@ -918,8 +936,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderInterviewerWorkspace() {
     const activeCamp = store.getActiveCampaign();
     const currentAdmin = store.getCurrentAdmin();
-    const isMentor = currentAdmin && currentAdmin.isMentor;
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
+    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
     const myDeptId = isDeptLead ? currentAdmin.deptId : null;
 
     if (isDeptLead) {
@@ -937,27 +955,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isDeptLead) {
         const myDept = store.getDepartmentById(myDeptId);
         tabsContainer.innerHTML = `
-          <div class="px-4 py-2 rounded-2xl text-xs font-black bg-orange-600 text-white shadow-md flex items-center gap-2">
-            <span>🔒 Phân quyền Trưởng ban:</span>
-            <span>${myDept ? myDept.name : ''} (Dành riêng cho ban của bạn)</span>
+          <div class="px-4 py-2 rounded-2xl text-xs font-black bg-[#8B1E22] text-white shadow-md flex items-center gap-2">
+            <span>🔒 Phân quyền Ban chuyên môn:</span>
+            <span>${myDept ? myDept.name : ''} (Điểm danh ca phỏng vấn ban của bạn)</span>
           </div>
         `;
-      } else if (isMentor) {
+      } else {
+        // Ban Chủ Nhiệm, Mentor, Ban Nhân Sự: Toàn quyền điểm danh cả 6 ban
         tabsContainer.innerHTML = `
-          <div class="w-full mb-3 p-3 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-bold flex items-center gap-2">
-            <span class="text-base">🎖️</span>
-            <span>Phân quyền Cố vấn (Mentor): Theo dõi tiến độ toàn bộ 6 ban</span>
+          <div class="w-full mb-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
+            <span class="text-base">👑</span>
+            <span>Toàn quyền quản trị (${currentAdmin?.fullName || 'Ban Quản Trị'}): Điểm danh và theo dõi tiến độ toàn bộ 6 ban</span>
           </div>
-          <div id="mentor-tabs-btn-box" class="flex flex-wrap gap-2">
-            <button class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentInterviewerDept === 'all' ? 'bg-orange-600 text-white shadow-sm ring-2 ring-orange-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}" data-dept="all">
-              👑 Tất cả 6 ban
+          <div id="full-access-tabs-btn-box" class="flex flex-wrap gap-2">
+            <button class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentInterviewerDept === 'all' ? 'bg-[#8B1E22] text-white shadow-sm ring-2 ring-red-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}" data-dept="all">
+              Tất cả 6 ban
             </button>
           </div>
         `;
-        const btnBox = tabsContainer.querySelector('#mentor-tabs-btn-box');
+        const btnBox = tabsContainer.querySelector('#full-access-tabs-btn-box');
         departments.forEach(dept => {
           const btn = document.createElement('button');
-          btn.className = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentInterviewerDept === dept.id ? 'bg-orange-600 text-white shadow-sm ring-2 ring-orange-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+          btn.className = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentInterviewerDept === dept.id ? 'bg-[#8B1E22] text-white shadow-sm ring-2 ring-red-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
           btn.textContent = dept.short;
           btn.onclick = () => {
             currentInterviewerDept = dept.id;
@@ -968,30 +987,6 @@ document.addEventListener('DOMContentLoaded', () => {
           btnBox.appendChild(btn);
         });
         btnBox.querySelector('[data-dept="all"]').onclick = () => {
-          currentInterviewerDept = 'all';
-          currentCheckinDate = 'all';
-          currentCheckinShift = 'all';
-          renderInterviewerWorkspace();
-        };
-      } else {
-        tabsContainer.innerHTML = `
-          <button class="px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentInterviewerDept === 'all' ? 'bg-orange-600 text-white shadow-sm ring-2 ring-orange-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}" data-dept="all">
-            👑 Tất cả 6 ban
-          </button>
-        `;
-        departments.forEach(dept => {
-          const btn = document.createElement('button');
-          btn.className = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentInterviewerDept === dept.id ? 'bg-orange-600 text-white shadow-sm ring-2 ring-orange-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-          btn.textContent = dept.short;
-          btn.onclick = () => {
-            currentInterviewerDept = dept.id;
-            currentCheckinDate = 'all';
-            currentCheckinShift = 'all';
-            renderInterviewerWorkspace();
-          };
-          tabsContainer.appendChild(btn);
-        });
-        tabsContainer.querySelector('[data-dept="all"]').onclick = () => {
           currentInterviewerDept = 'all';
           currentCheckinDate = 'all';
           currentCheckinShift = 'all';
@@ -1165,14 +1160,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('form-admin-login');
     if (!form) return;
 
-    form.onsubmit = (e) => {
+    form.onsubmit = async (e) => {
       e.preventDefault();
       const u = document.getElementById('admin-login-username').value;
       const p = document.getElementById('admin-login-password').value;
 
       try {
-        const admin = store.authenticateAdmin(u, p);
-        window.UI.showToast(`Xin chào ${admin.fullName} (${admin.role})!`, 'success');
+        const admin = await store.authenticateAdmin(u, p);
+        const roleStr = admin.role ? ` (${admin.role})` : '';
+        window.UI.showToast(`Xin chào ${admin.fullName}${roleStr}!`, 'success');
         currentActiveAdminTab = 'slots';
         currentInterviewerDept = (admin.deptId && admin.deptId !== 'all') ? admin.deptId : 'all';
         renderAdminWorkspace();
@@ -1240,9 +1236,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatarEl = document.getElementById('admin-profile-avatar');
     const nameEl = document.getElementById('admin-profile-name');
     const roleEl = document.getElementById('admin-profile-role');
-    if (avatarEl) avatarEl.textContent = currentAdmin.avatar || '👨‍💼';
+    if (avatarEl) avatarEl.textContent = currentAdmin.avatar || '👑';
     if (nameEl) nameEl.textContent = currentAdmin.fullName;
-    if (roleEl) roleEl.textContent = currentAdmin.role;
+    if (roleEl) {
+      if (currentAdmin.role && currentAdmin.role.trim()) {
+        roleEl.textContent = currentAdmin.role;
+        roleEl.classList.remove('hidden');
+      } else {
+        roleEl.textContent = '';
+        roleEl.classList.add('hidden');
+      }
+    }
 
     // Profile Settings Button
     const profileBtn = document.getElementById('btn-open-admin-profile-modal');
@@ -1265,8 +1269,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logout Button
     const logoutBtn = document.getElementById('btn-admin-logout');
     if (logoutBtn) {
-      logoutBtn.onclick = () => {
-        store.logoutAdmin();
+      logoutBtn.onclick = async () => {
+        await store.logoutAdmin();
         window.UI.showToast('Đã đăng xuất khỏi tài khoản quản trị.', 'info');
         renderAdminWorkspace();
       };
@@ -1308,24 +1312,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (timeInput) timeInput.value = `${hh}:${min}`;
     }
 
-    // Configure Action Buttons & Inputs for Mentor vs Ban Chủ Nhiệm
-    const isMentor = currentAdmin && currentAdmin.isMentor;
-    ['btn-open-new-campaign-modal', 'btn-open-import-modal'].forEach(id => {
+    // Configure Action Buttons & Inputs for Full Access (Ban Chủ Nhiệm, Mentor, Ban Nhân Sự)
+    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
+    ['btn-open-new-campaign-modal', 'btn-open-import-modal', 'sidebar-create-campaign-container'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        if (isMentor || (currentAdmin && currentAdmin.deptId !== 'all')) el.classList.add('hidden');
+        if (!isSuperAdmin) el.classList.add('hidden');
         else el.classList.remove('hidden');
       }
     });
 
-    // Configure Deadline Card Visibility (Exclusive to Ban Chủ Nhiệm - Hidden for Mentor and Dept Leads)
+    // Configure Deadline Card Visibility (Exclusive to Ban Chủ Nhiệm, Mentor, Ban Nhân Sự)
     const deadlineBox = document.getElementById('admin-deadline-card-box');
     if (deadlineBox) {
-      if (currentAdmin && currentAdmin.deptId === 'all' && !isMentor) {
+      if (isSuperAdmin) {
         deadlineBox.classList.remove('hidden');
       } else {
         deadlineBox.classList.add('hidden');
       }
+    }
+
+    // Dropdown tùy chọn mở/khóa/xóa ca: chỉ mở cho Full quyền
+    const slotActionsDropdown = document.getElementById('slot-actions-dropdown-container');
+    if (slotActionsDropdown) {
+      if (!isSuperAdmin) slotActionsDropdown.classList.add('hidden');
+      else slotActionsDropdown.classList.remove('hidden');
     }
 
     // Populate filter dropdowns with strict RBAC scoping
@@ -1385,18 +1396,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function switchAdminTab(tabId) {
     if (tabId === 'dashboard') tabId = 'slots';
-    currentActiveAdminTab = tabId;
     const currentAdmin = store.getCurrentAdmin();
-    const isMentor = currentAdmin && currentAdmin.isMentor;
-    const isSuperAdmin = currentAdmin && currentAdmin.deptId === 'all' && !isMentor;
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const isRootAdmin = currentAdmin && (
+      currentAdmin.id === 'adm-root-admin' || 
+      currentAdmin.username?.toLowerCase() === 'admin.mcc@gmail.com' ||
+      currentAdmin.role === 'Admin' ||
+      currentAdmin.fullName?.toLowerCase() === 'admin'
+    );
+
+    // Chức năng Tùy chọn chỉ duy nhất tài khoản admin được phép truy cập
+    if (tabId === 'options' && !isRootAdmin) {
+      tabId = 'candidates';
+    }
+    currentActiveAdminTab = tabId;
+
+    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
+    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
 
     // Panes map
     const panes = {
       candidates: document.getElementById('admin-pane-candidates'),
       slots: document.getElementById('admin-pane-slots'),
       checkin: document.getElementById('admin-pane-checkin'),
-      audit: document.getElementById('admin-pane-audit')
+      audit: document.getElementById('admin-pane-audit'),
+      options: document.getElementById('admin-pane-options')
     };
 
     // Titles map
@@ -1404,7 +1427,8 @@ document.addEventListener('DOMContentLoaded', () => {
       candidates: 'Tổng hợp các ca phỏng vấn ứng viên đăng ký',
       slots: 'Quản lý lịch phỏng vấn',
       checkin: 'Chi tiết ca & điểm danh',
-      audit: 'Lịch sử hoạt động hệ thống'
+      audit: 'Lịch sử hoạt động hệ thống',
+      options: 'Cấu hình tùy chọn hệ thống'
     };
 
     const titleEl = document.getElementById('admin-pane-title');
@@ -1432,9 +1456,10 @@ document.addEventListener('DOMContentLoaded', () => {
       let isRestricted = false;
       if (bTab === 'dashboard' || bTab === 'settings') {
         isRestricted = true;
-      } else if (isDeptLead && bTab === 'audit') {
+      } else if (bTab === 'options' && !isRootAdmin) {
+        // Chức năng tùy chọn CHỈ HIỆN ở tài khoản admin
         isRestricted = true;
-      } else if (isMentor && bTab === 'checkin') {
+      } else if (isDeptLead && bTab === 'audit') {
         isRestricted = true;
       }
 
@@ -1458,18 +1483,24 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (tabId === 'candidates') renderAdminCandidatesTable();
     else if (tabId === 'checkin') renderInterviewerWorkspace();
     else if (tabId === 'audit') renderAdminAuditLogs();
+    else if (tabId === 'options') renderAdminOptionsPane();
   }
 
   function setupAdminSidebarNav(currentAdmin) {
-    const isMentor = currentAdmin && currentAdmin.isMentor;
-    const isSuperAdmin = currentAdmin && currentAdmin.deptId === 'all' && !isMentor;
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
+    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
     const myDeptId = isDeptLead ? currentAdmin.deptId : null;
+    const isRootAdmin = currentAdmin && (
+      currentAdmin.id === 'adm-root-admin' || 
+      currentAdmin.username?.toLowerCase() === 'admin.mcc@gmail.com' ||
+      currentAdmin.role === 'Admin' ||
+      currentAdmin.fullName?.toLowerCase() === 'admin'
+    );
 
     // 1. Default Tab Logic - Candidates is the universal landing tab
-    if (isDeptLead && (currentActiveAdminTab === 'audit' || currentActiveAdminTab === 'dashboard' || currentActiveAdminTab === 'settings')) {
+    if (!isRootAdmin && currentActiveAdminTab === 'options') {
       currentActiveAdminTab = 'candidates';
-    } else if (isMentor && (currentActiveAdminTab === 'checkin' || currentActiveAdminTab === 'dashboard' || currentActiveAdminTab === 'settings')) {
+    } else if (isDeptLead && (currentActiveAdminTab === 'audit' || currentActiveAdminTab === 'dashboard' || currentActiveAdminTab === 'settings')) {
       currentActiveAdminTab = 'candidates';
     } else if (!currentActiveAdminTab || currentActiveAdminTab === 'dashboard') {
       currentActiveAdminTab = 'candidates';
@@ -1529,7 +1560,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAdminSlotsTable() {
     const activeCamp = store.getActiveCampaign();
     const currentAdmin = store.getCurrentAdmin();
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
+    const isCanEditCapacity = currentAdmin && (currentAdmin.role === 'Ban Chủ Nhiệm' || currentAdmin.role === 'Mentor');
+    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
     const myDeptId = isDeptLead ? currentAdmin.deptId : null;
 
     let deptFilter = document.getElementById('admin-filter-slot-dept')?.value || 'all';
@@ -1550,7 +1583,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
 
     const selectAllCheckbox = document.getElementById('chk-select-all-slots');
-    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = false;
+      if (isDeptLead) selectAllCheckbox.disabled = true;
+      else selectAllCheckbox.disabled = false;
+    }
     updateSlotSelectionBadge();
 
     if (slots.length === 0) {
@@ -1564,49 +1601,108 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.className = 'border-b border-slate-100 hover:bg-slate-50';
 
+      const checkColHtml = isSuperAdmin
+        ? `<input type="checkbox" value="${slot.id}" class="chk-slot-item rounded text-orange-600 cursor-pointer">`
+        : `<span class="text-slate-300">•</span>`;
+
+      const actionColHtml = isSuperAdmin
+        ? `<button class="btn-toggle-open px-3 py-1 text-[11px] font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+            slot.isOpen ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+          }">
+            ${slot.isOpen ? '✓ Đang Mở' : '🔒 Đã Khóa'}
+          </button>`
+        : `<span class="px-2.5 py-1 text-[11px] font-bold rounded-xl whitespace-nowrap ${
+            slot.isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
+          }">
+            ${slot.isOpen ? '✓ Đang Mở' : '🔒 Đã Khóa'}
+          </span>`;
+
+      const capacityColHtml = isCanEditCapacity ? `
+        <div class="flex items-center gap-1.5 whitespace-nowrap">
+          <span class="font-black ${slot.isFull ? 'text-rose-600' : 'text-slate-900'}">${slot.bookedCount}/</span>
+          <select class="sel-slot-capacity text-xs font-black bg-white border border-slate-300 rounded-lg px-1.5 py-0.5 text-slate-800 cursor-pointer shadow-2xs hover:border-[#8B1E22] transition-colors" title="Ban Chủ Nhiệm / Mentor: Bấm để đổi số lượng ứng viên cho ca này (1-3)">
+            <option value="1" ${slot.capacity === 1 ? 'selected' : ''}>1</option>
+            <option value="2" ${slot.capacity === 2 || !slot.capacity ? 'selected' : ''}>2</option>
+            <option value="3" ${slot.capacity === 3 ? 'selected' : ''}>3</option>
+          </select>
+          ${slot.isFull ? '<span class="text-[10px] text-rose-600 font-bold">(Hết chỗ)</span>' : ''}
+          ${slot.waitlistCount > 0 ? `
+            <button type="button" onclick="window.__openWaitlistModal('${slot.id}')" class="btn-open-waitlist px-2 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-black inline-flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 shadow-sm whitespace-nowrap" title="Bấm để xem thông tin ứng viên đang chờ">
+              <span>⏳</span>
+              <span>${slot.waitlistCount} chờ</span>
+            </button>
+          ` : ''}
+        </div>
+      ` : `
+        <div class="flex items-center gap-1.5 whitespace-nowrap">
+          <span class="font-black ${slot.isFull ? 'text-rose-600' : 'text-slate-900'}">${slot.bookedCount}/${slot.capacity || 2}</span>
+          ${slot.isFull ? '<span class="text-[10px] text-rose-600 font-bold">(Hết chỗ)</span>' : ''}
+          ${slot.waitlistCount > 0 ? `
+            <button type="button" onclick="window.__openWaitlistModal('${slot.id}')" class="btn-open-waitlist px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-black inline-flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 shadow-sm whitespace-nowrap" title="Bấm để xem thông tin ứng viên đang chờ">
+              <span>⏳</span>
+              <span>${slot.waitlistCount} chờ (Xem)</span>
+            </button>
+          ` : ''}
+        </div>
+      `;
+
       tr.innerHTML = `
-        <td class="px-4 py-3 whitespace-nowrap">
-          <input type="checkbox" value="${slot.id}" class="chk-slot-item rounded text-orange-600 cursor-pointer">
+        <td class="px-4 py-3 whitespace-nowrap text-center">
+          ${checkColHtml}
         </td>
-        <td class="px-4 py-3 whitespace-nowrap font-bold text-orange-700">${slot.dept.name}</td>
+        <td class="px-4 py-3 whitespace-nowrap font-bold text-[#8B1E22]">${slot.dept.name}</td>
         <td class="px-4 py-3 whitespace-nowrap font-bold">${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} <span class="text-slate-400 font-normal">(${dd}/${mm})</span></td>
         <td class="px-4 py-3 whitespace-nowrap text-slate-600">${slot.type === 'online' ? 'Online Meet' : slot.location}</td>
         <td class="px-4 py-3 text-slate-600 truncate max-w-xs" title="${ivList}">
           ${(slot.interviewers && slot.interviewers.length >= 2) ? ivList : `<span class="text-rose-600 font-bold">⚠️ Cần ≥ 2 người (hiện có ${slot.interviewers?.length || 0})</span>`}
         </td>
         <td class="px-4 py-3 whitespace-nowrap">
-          <div class="flex items-center gap-1.5 whitespace-nowrap">
-            <span class="font-black ${slot.isFull ? 'text-rose-600' : 'text-slate-900'}">${slot.bookedCount}/2</span>
-            ${slot.isFull ? '<span class="text-[10px] text-rose-600 font-bold">(Hết chỗ)</span>' : ''}
-            ${slot.waitlistCount > 0 ? `
-              <button type="button" onclick="window.__openWaitlistModal('${slot.id}')" class="btn-open-waitlist px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-black inline-flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 shadow-sm whitespace-nowrap" title="Bấm để xem thông tin ứng viên đang chờ">
-                <span>⏳</span>
-                <span>${slot.waitlistCount} chờ (Xem)</span>
-              </button>
-            ` : ''}
-          </div>
+          ${capacityColHtml}
         </td>
         <td class="px-4 py-3 text-right whitespace-nowrap">
-          <button class="btn-toggle-open px-3 py-1 text-[11px] font-bold rounded-xl transition-all whitespace-nowrap ${
-            slot.isOpen ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-          }">
-            ${slot.isOpen ? '✓ Đang Mở' : '🔒 Đã Khóa (Draft)'}
-          </button>
+          ${actionColHtml}
         </td>
       `;
 
-      const chk = tr.querySelector('.chk-slot-item');
-      if (chk) chk.onchange = updateSlotSelectionBadge;
+      if (isCanEditCapacity) {
+        const selCap = tr.querySelector('.sel-slot-capacity');
+        if (selCap) {
+          selCap.onchange = (e) => {
+            const newCap = parseInt(e.target.value, 10);
+            const oldCap = slot.capacity || 2;
+            if (newCap === oldCap) return;
 
-      tr.querySelector('.btn-toggle-open').onclick = () => {
-        try {
-          store.toggleSlotOpen(slot.id, !slot.isOpen);
-          window.UI.showToast(`Đã ${!slot.isOpen ? 'mở' : 'khóa'} ca phỏng vấn!`, 'success');
-          renderAdminSlotsTable();
-        } catch (err) {
-          window.UI.showToast(err.message, 'error');
+            // Kiểm tra an toàn: Không cho giảm sức chứa thấp hơn số ứng viên đã xác nhận
+            const activeRegs = (store.data.registrations || []).filter(r => r.slotId === slot.id && r.status === 'confirmed');
+            if (newCap < activeRegs.length) {
+              window.UI.showToast(`Ca này hiện đã có ${activeRegs.length} bạn xác nhận. Không thể giảm sức chứa xuống ${newCap}!`, 'warning');
+              e.target.value = oldCap;
+              return;
+            }
+
+            // Mở modal xác nhận thay đổi
+            window.__openCapacityConfirmModal(slot, oldCap, newCap, selCap);
+          };
         }
-      };
+      }
+
+      if (isSuperAdmin) {
+        const chk = tr.querySelector('.chk-slot-item');
+        if (chk) chk.onchange = updateSlotSelectionBadge;
+
+        const toggleBtn = tr.querySelector('.btn-toggle-open');
+        if (toggleBtn) {
+          toggleBtn.onclick = () => {
+            try {
+              store.toggleSlotOpen(slot.id, !slot.isOpen);
+              window.UI.showToast(`Đã ${!slot.isOpen ? 'mở' : 'khóa'} ca phỏng vấn!`, 'success');
+              renderAdminSlotsTable();
+            } catch (err) {
+              window.UI.showToast(err.message, 'error');
+            }
+          };
+        }
+      }
 
       tbody.appendChild(tr);
     });
@@ -1846,7 +1942,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAdminCandidatesTable() {
     const activeCamp = store.getActiveCampaign();
     const currentAdmin = store.getCurrentAdmin();
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
+    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
     const myDeptId = isDeptLead ? currentAdmin.deptId : null;
 
     const searchVal = (document.getElementById('admin-cand-search')?.value || '').toLowerCase();
@@ -1916,6 +2013,14 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
+      const actionHtml = isSuperAdmin
+        ? `<button class="btn-open-override px-2.5 py-1 rounded-xl ${isCancelled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-red-50 text-[#8B1E22] hover:bg-[#8B1E22] hover:text-white'} font-bold transition-all text-xs cursor-pointer">
+            ${isCancelled ? '🔄 Đặt lại ca' : '⚙️ Can thiệp'}
+          </button>`
+        : `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs">
+            Chỉ xem
+          </span>`;
+
       tr.innerHTML = `
         <td class="px-4 py-3 font-mono font-black ${isCancelled ? 'text-slate-400' : 'text-[#8B1E22]'}">${r.bookingCode}</td>
         <td class="px-4 py-3">
@@ -1932,15 +2037,15 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </td>
         <td class="px-4 py-3 text-right">
-          <button class="btn-open-override px-2.5 py-1 rounded-xl ${isCancelled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-red-50 text-[#8B1E22] hover:bg-[#8B1E22] hover:text-white'} font-bold transition-all text-xs cursor-pointer">
-            ${isCancelled ? '🔄 Đặt lại ca' : '⚙️ Can thiệp'}
-          </button>
+          ${actionHtml}
         </td>
       `;
 
-      tr.querySelector('.btn-open-override').onclick = () => {
-        openAdminOverrideModal(r);
-      };
+      if (isSuperAdmin) {
+        tr.querySelector('.btn-open-override').onclick = () => {
+          openAdminOverrideModal(r);
+        };
+      }
 
       tbody.appendChild(tr);
     });
@@ -2053,6 +2158,35 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
   }
+
+  function renderAdminOptionsPane() {
+    const toggle = document.getElementById('toggle-waitlist-feature');
+    const badge = document.getElementById('badge-waitlist-status');
+    if (toggle) {
+      const isEnabled = store.isWaitlistEnabled();
+      toggle.checked = isEnabled;
+      if (badge) {
+        badge.textContent = isEnabled ? 'Đang Bật' : 'Đã Tắt';
+        badge.className = isEnabled
+          ? 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200'
+          : 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-slate-200 text-slate-600 border border-slate-300';
+      }
+    }
+  }
+
+  document.getElementById('toggle-waitlist-feature')?.addEventListener('change', (e) => {
+    const isEnabled = e.target.checked;
+    store.setWaitlistEnabled(isEnabled);
+    const badge = document.getElementById('badge-waitlist-status');
+    if (badge) {
+      badge.textContent = isEnabled ? 'Đang Bật' : 'Đã Tắt';
+      badge.className = isEnabled
+        ? 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200'
+        : 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-slate-200 text-slate-600 border border-slate-300';
+    }
+    window.UI.showToast(`Đã ${isEnabled ? 'BẬT' : 'TẮT'} chức năng Waitlist trên toàn bộ hệ thống!`, isEnabled ? 'success' : 'info');
+    renderAdminSlotsTable();
+  });
 
   // Deadline Quick Preset Handler
   window.__setDeadlinePreset = function(preset) {
@@ -2174,40 +2308,85 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!csvText) return;
 
     try {
-      const parsed = window.ExcelHelper.parseSlotsCsv(csvText);
-      parsed.forEach(s => store.addSlot(s));
-      window.UI.showToast(`Đã import thành công ${parsed.length} ca phỏng vấn (không có va chạm lịch)!`, 'success');
+      const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        throw new Error('Dữ liệu CSV không hợp lệ hoặc thiếu dòng dữ liệu.');
+      }
+
+      // Xác định vị trí các cột theo tiêu đề (hỗ trợ cả tiếng Anh và tiếng Việt)
+      const headerParts = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+      let deptColIdx = headerParts.findIndex(h => ['departmentid', 'dept', 'ban'].includes(h));
+      let dateColIdx = headerParts.findIndex(h => ['date', 'ngay'].includes(h));
+      let startColIdx = headerParts.findIndex(h => ['starttime', 'gio_bat_dau', 'gio_batdau'].includes(h));
+      let endColIdx = headerParts.findIndex(h => ['endtime', 'gio_ket_thuc', 'gio_ketthuc'].includes(h));
+      let capColIdx = headerParts.findIndex(h => ['capacity', 'so_ung_vien', 'so_luong', 'so_cho'].includes(h));
+      let locColIdx = headerParts.findIndex(h => ['location', 'dia_diem'].includes(h));
+      let typeColIdx = headerParts.findIndex(h => ['type', 'hinh_thuc'].includes(h));
+
+      // Thứ tự mặc định nếu file không có header chuẩn:
+      // Dept(0), Date(1), StartTime(2), EndTime(3), Capacity(4), Location(5), Type(6)
+      if (deptColIdx === -1) deptColIdx = 0;
+      if (dateColIdx === -1) dateColIdx = 1;
+      if (startColIdx === -1) startColIdx = 2;
+      if (endColIdx === -1) endColIdx = 3;
+      if (capColIdx === -1) capColIdx = 4;
+      if (locColIdx === -1) locColIdx = 5;
+      if (typeColIdx === -1) typeColIdx = 6;
+
+      const activeCamp = store.getActiveCampaign();
+      const slotsToAdd = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+        if (parts.length < 4 || (parts.length === 1 && !parts[0])) continue;
+
+        const deptId = parts[deptColIdx] || '';
+        const deptObj = store.getDepartmentById(deptId);
+        const deptName = deptObj ? deptObj.name : (deptId || `Ban dòng ${i + 1}`);
+        const date = parts[dateColIdx] || '';
+        const startTime = parts[startColIdx] || '';
+        const endTime = parts[endColIdx] || '';
+
+        // ĐỌC VÀ KIỂM TRA BẮT BUỘC SỐ LƯỢNG ỨNG VIÊN
+        const rawCap = (capColIdx < parts.length && parts[capColIdx] !== undefined) ? parts[capColIdx].trim() : '';
+
+        // NẾU BỎ TRỐNG: DỪNG IMPORT VÀ BẬT THÔNG BÁO RÕ RÀNG CA NÀO BỊ THIẾU
+        if (!rawCap || rawCap === '') {
+          throw new Error(`Dòng ${i + 1}: Ca ${deptName} lúc ${startTime || '??'} - ${endTime || '??'} (ngày ${date || '??'}) chưa có số lượng ứng viên! Vui lòng điền số lượng (1 - 3) cho ca này.`);
+        }
+
+        const cap = parseInt(rawCap, 10);
+        if (isNaN(cap) || ![1, 2, 3].includes(cap)) {
+          throw new Error(`Dòng ${i + 1}: Ca ${deptName} (${startTime} - ${endTime}) có số lượng ứng viên không hợp lệ ("${rawCap}"). Sức chứa mỗi ca chỉ được phép từ 1 đến 3 ứng viên!`);
+        }
+
+        slotsToAdd.push({
+          campaignId: activeCamp.id,
+          departmentId: deptId,
+          date: date,
+          startTime: startTime,
+          endTime: endTime,
+          capacity: cap,
+          location: (locColIdx < parts.length && parts[locColIdx]) || 'Phòng 501 - E4',
+          type: (typeColIdx < parts.length && parts[typeColIdx]) || 'offline',
+          isOpen: true
+        });
+      }
+
+      if (slotsToAdd.length === 0) {
+        throw new Error('Không tìm thấy ca phỏng vấn hợp lệ nào để import.');
+      }
+
+      slotsToAdd.forEach(s => store.addSlot(s));
+      window.UI.showToast(`Đã import thành công ${slotsToAdd.length} ca phỏng vấn!`, 'success');
       document.getElementById('modal-import-slots')?.classList.add('hidden');
       document.getElementById('import-csv-textarea').value = '';
       renderAdminSlotsTable();
+
     } catch (err) {
-      alert('LỖI IMPORT CSV:\n\n' + err.message);
+      window.UI.showToast(err.message, 'error');
+      alert('⚠️ LỖI DỮ LIỆU IMPORT CSV:\n\n' + err.message);
     }
-  });
-
-  // Export Excel with RBAC scoping
-  document.getElementById('btn-admin-export-excel')?.addEventListener('click', () => {
-    const activeCamp = store.getActiveCampaign();
-    const currentAdmin = store.getCurrentAdmin();
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
-    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
-
-    let targetRegs = store.data.registrations
-      .filter(r => r.campaignId === activeCamp.id && r.status === 'confirmed');
-
-    if (isDeptLead) {
-      targetRegs = targetRegs.filter(r => r.departmentId === myDeptId);
-    }
-
-    const mapped = targetRegs.map(r => ({
-      ...r,
-      candidate: store.data.candidates.find(c => c.id === r.candidateId),
-      slot: store.getSlotById(r.slotId),
-      dept: store.getDepartmentById(r.departmentId)
-    }));
-
-    window.ExcelHelper.exportCandidatesToCsv(mapped, activeCamp);
-    window.UI.showToast(`Đã xuất file báo cáo ${isDeptLead ? 'ban của bạn' : 'toàn bộ 6 ban'} thành công!`, 'success');
   });
 
   // --- ADMIN PROFILE SETTINGS & CHANGE PASSWORD ---
@@ -2221,10 +2400,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const usernameEl = document.getElementById('profile-admin-username');
     const roleEl = document.getElementById('profile-admin-role');
-    const nameEl = document.getElementById('profile-admin-fullname');
     if (usernameEl) usernameEl.value = current.username || '';
     if (roleEl) roleEl.value = `${current.role || ''} ${current.deptId && current.deptId !== 'all' ? `(${store.getDepartmentById(current.deptId)?.name || current.deptId})` : ''}`;
-    if (nameEl) nameEl.value = current.fullName || '';
     
     // Clear password fields
     const currP = document.getElementById('profile-admin-curr-pass');
@@ -2237,7 +2414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('modal-admin-profile');
     if (modal) {
       modal.classList.remove('hidden');
-      setTimeout(() => { nameEl?.focus(); }, 50);
+      setTimeout(() => { currP?.focus(); }, 50);
     }
   };
 
@@ -2261,49 +2438,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.getElementById('form-update-admin-profile')?.addEventListener('submit', (e) => {
+  document.getElementById('form-update-admin-profile')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const current = store.getCurrentAdmin();
     if (!current) return;
 
-    const fullName = document.getElementById('profile-admin-fullname').value.trim();
     const currPass = document.getElementById('profile-admin-curr-pass').value.trim();
     const newPass = document.getElementById('profile-admin-new-pass').value.trim();
     const confirmPass = document.getElementById('profile-admin-confirm-pass').value.trim();
 
-    if (!fullName) {
-      window.UI.showToast('Họ và tên hiển thị không được để trống.', 'warning');
+    if (!newPass) {
+      window.UI.showToast('Tên hiển thị đã được cố định bởi Ban Tổ Chức. Không có thay đổi mật khẩu nào được thực hiện.', 'info');
+      document.getElementById('modal-admin-profile')?.classList.add('hidden');
       return;
     }
 
-    if (newPass) {
-      if (!currPass) {
-        window.UI.showToast('Vui lòng nhập mật khẩu hiện tại để xác nhận đổi mật khẩu mới.', 'warning');
-        return;
-      }
-      if (newPass.length < 4) {
-        window.UI.showToast('Mật khẩu mới phải có ít nhất 4 ký tự.', 'warning');
-        return;
-      }
-      if (newPass !== confirmPass) {
-        window.UI.showToast('Xác nhận mật khẩu mới không khớp.', 'error');
-        return;
-      }
+    if (!currPass) {
+      window.UI.showToast('Vui lòng nhập mật khẩu hiện tại để xác nhận đổi mật khẩu mới.', 'warning');
+      return;
+    }
+    if (newPass.length < 6) {
+      window.UI.showToast('Mật khẩu mới phải có ít nhất 6 ký tự.', 'warning');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      window.UI.showToast('Xác nhận mật khẩu mới không khớp.', 'error');
+      return;
     }
 
     try {
-      const updated = store.updateAdminProfile(current.id, {
-        fullName,
+      await store.updateAdminProfile(current.id, {
         currentPassword: currPass,
         newPassword: newPass
       });
-
-      // Update sidebar UI immediately
-      document.getElementById('admin-profile-name').textContent = updated.fullName;
-      window.UI.showToast('Đã cập nhật thông tin tài khoản quản trị thành công!', 'success');
+      window.UI.showToast('Đã đổi mật khẩu tài khoản thành công trên máy chủ Google Firebase!', 'success');
       document.getElementById('modal-admin-profile')?.classList.add('hidden');
-      renderAdminWorkspace();
-
+      document.getElementById('profile-admin-curr-pass').value = '';
+      document.getElementById('profile-admin-new-pass').value = '';
+      document.getElementById('profile-admin-confirm-pass').value = '';
     } catch (err) {
       window.UI.showToast(err.message, 'error');
     }
@@ -2314,6 +2486,66 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
     });
+  });
+
+  // --- CONFIRM CHANGE SLOT CAPACITY MODAL ---
+  let pendingCapacityChange = null;
+
+  window.__openCapacityConfirmModal = function(slot, oldCap, newCap, selectElement) {
+    pendingCapacityChange = { slot, oldCap, newCap, selectElement };
+
+    const modal = document.getElementById('modal-confirm-capacity');
+    if (!modal) return;
+
+    const [yy, mm, dd] = (slot.date || '').split('-');
+    const deptEl = document.getElementById('confirm-cap-dept');
+    if (deptEl) deptEl.textContent = slot.dept?.name || 'Ban chuyên môn';
+
+    const timeEl = document.getElementById('confirm-cap-time');
+    if (timeEl) timeEl.textContent = `${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} (Ngày ${dd}/${mm}/${yy})`;
+
+    const oldEl = document.getElementById('confirm-cap-old');
+    if (oldEl) oldEl.textContent = `${oldCap} ứng viên`;
+
+    const newEl = document.getElementById('confirm-cap-new');
+    if (newEl) newEl.textContent = `${newCap} ứng viên`;
+
+    const noteEl = document.getElementById('confirm-cap-note');
+    if (noteEl) {
+      if (newCap > oldCap && slot.waitlistCount > 0) {
+        noteEl.innerHTML = `💡 <strong>Lưu ý:</strong> Ca này đang có <strong>${slot.waitlistCount} ứng viên trong hàng chờ</strong>. Khi nâng sức chứa lên ${newCap}, ứng viên hàng chờ sẽ được <strong>tự động đôn lên chính thức</strong>.`;
+      } else {
+        noteEl.textContent = 'Bạn có chắc chắn muốn thay đổi số lượng ứng viên tối đa cho ca phỏng vấn này không?';
+      }
+    }
+
+    modal.classList.remove('hidden');
+  };
+
+  function closeCapacityConfirmModal(revert = false) {
+    const modal = document.getElementById('modal-confirm-capacity');
+    if (modal) modal.classList.add('hidden');
+    if (revert && pendingCapacityChange && pendingCapacityChange.selectElement) {
+      pendingCapacityChange.selectElement.value = pendingCapacityChange.oldCap;
+    }
+    pendingCapacityChange = null;
+  }
+
+  document.getElementById('btn-close-confirm-capacity')?.addEventListener('click', () => closeCapacityConfirmModal(true));
+  document.getElementById('btn-cancel-confirm-capacity')?.addEventListener('click', () => closeCapacityConfirmModal(true));
+
+  document.getElementById('btn-accept-confirm-capacity')?.addEventListener('click', () => {
+    if (!pendingCapacityChange) return;
+    const { slot, newCap } = pendingCapacityChange;
+    try {
+      store.updateSlotCapacity(slot.id, newCap);
+      window.UI.showToast(`Đã cập nhật sức chứa ca ${slot.dept?.name} thành ${newCap} ứng viên!`, 'success');
+      closeCapacityConfirmModal(false);
+      renderAdminSlotsTable();
+    } catch (err) {
+      window.UI.showToast(err.message, 'error');
+      closeCapacityConfirmModal(true);
+    }
   });
 
   // Filter input listeners
