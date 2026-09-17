@@ -7,7 +7,6 @@ const EMAILJS_CONFIG = {
   PUBLIC_KEY: 'fduCbSpaMKcclhHgP',      // Public Key từ EmailJS của bạn
   SERVICE_ID: 'service_lki5l9z',        // Service ID kết nối Gmail dunkduong06@gmail.com
   TEMPLATE_OTP_ID: 'template_h3qv7sj',  // Template ID One-Time Password của bạn
-  TEMPLATE_CONFIRM_ID: 'template_h3qv7sj', // Template xác nhận lịch
   CLUB_SENDER_EMAIL: 'dunkduong06@gmail.com',
   CLUB_NAME: 'CLB Truyền Thông MCC - UEB'
 };
@@ -74,46 +73,6 @@ window.EmailService = {
       success: true,
       mode: 'fallback'
     };
-  },
-
-  /**
-   * Tự động gửi Email xác nhận đăng ký / đổi ca phỏng vấn thành công
-   */
-  async sendBookingConfirmationEmail({ recipientEmail, candidateName, bookingCode, deptName, slotTime, slotDate, location }) {
-    // Chỉ gửi khi có template xác nhận riêng (khác template OTP), tránh gửi nhầm nội dung OTP khi đăng ký ca
-    if (!EMAILJS_CONFIG.TEMPLATE_CONFIRM_ID || EMAILJS_CONFIG.TEMPLATE_CONFIRM_ID === EMAILJS_CONFIG.TEMPLATE_OTP_ID) {
-      console.log('ℹ️ Bỏ qua gửi email xác nhận vì chưa cấu hình template xác nhận riêng, tránh gửi nhầm template OTP.');
-      return { success: true, mode: 'skipped' };
-    }
-
-    console.log(`📨 Đang gửi Email xác nhận lịch phỏng vấn tới: ${recipientEmail}`);
-
-    const templateParams = {
-      to_email: recipientEmail,
-      email: recipientEmail,
-      reply_to: recipientEmail,
-      to_name: candidateName,
-      name: candidateName,
-      booking_code: bookingCode,
-      department_name: deptName,
-      slot_time: slotTime,
-      slot_date: slotDate,
-      slot_location: location,
-      club_name: EMAILJS_CONFIG.CLUB_NAME,
-      subject: `[MCC.UEB] Xác nhận lịch phỏng vấn tuyển quân - Mã đơn: ${bookingCode}`,
-      message: `Chào bạn ${candidateName},\n\nBạn đã đăng ký thành công ca phỏng vấn ${deptName} vào lúc ${slotTime} (ngày ${slotDate}) tại ${location}.\nMã hồ sơ của bạn là: ${bookingCode}.\n\nHẹn gặp lại bạn tại buổi phỏng vấn!\nCLB Truyền Thông MCC - UEB.`
-    };
-
-    if (typeof emailjs !== 'undefined' && EMAILJS_CONFIG.PUBLIC_KEY) {
-      try {
-        const response = await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_CONFIRM_ID, templateParams);
-        return { success: true, mode: 'real_email', response };
-      } catch (error) {
-        console.warn('⚠️ Gửi email xác nhận:', error);
-      }
-    }
-
-    return { success: true, mode: 'simulated' };
   }
 };
 

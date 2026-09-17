@@ -2,8 +2,17 @@
  * App.js - Application Controller & Interaction Logic for MCC.UEB
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   const store = window.appStore;
+  const escapeHtml = window.escapeHtml || function(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
 
   // Global Wizard State
   const wizardState = {
@@ -24,6 +33,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Admin Override Target
   let currentOverrideReg = null;
+
+  // --- ANIMATION SYSTEM HELPERS ---
+  function triggerConfetti() {
+    if (typeof window.confetti === 'function') {
+      try {
+        window.confetti({
+          particleCount: 75,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#8B1E22', '#E2B774', '#ea580c', '#059669', '#3b82f6']
+        });
+        setTimeout(() => {
+          window.confetti({
+            particleCount: 45,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ['#8B1E22', '#E2B774', '#F5E6C8']
+          });
+          window.confetti({
+            particleCount: 45,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ['#8B1E22', '#E2B774', '#F5E6C8']
+          });
+        }, 220);
+      } catch (err) {
+        console.warn('Confetti trigger warning:', err);
+      }
+    }
+  }
+
+  function animateCounter(element, targetValue, duration = 750, suffix = '') {
+    if (!element) return;
+    const start = 0;
+    const end = parseInt(targetValue, 10) || 0;
+    if (end === 0) {
+      element.textContent = `0 ${suffix}`.trim();
+      return;
+    }
+    const startTime = performance.now();
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Cubic ease out
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const currentVal = Math.round(start + (end - start) * easeProgress);
+      element.textContent = `${currentVal} ${suffix}`.trim();
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  // Universal Material Ripple click effect on interactive buttons
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button, .btn-primary-pro, .btn-secondary-pro, .btn-shimmer, [data-route]');
+    if (!btn || btn.disabled) return;
+
+    const computedPos = window.getComputedStyle(btn).position;
+    if (computedPos === 'static') {
+      btn.style.position = 'relative';
+    }
+    btn.style.overflow = 'hidden';
+
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+
+    const wave = document.createElement('span');
+    wave.className = 'ripple-wave';
+    wave.style.width = `${size}px`;
+    wave.style.height = `${size}px`;
+    wave.style.left = `${x}px`;
+    wave.style.top = `${y}px`;
+
+    btn.appendChild(wave);
+    setTimeout(() => {
+      wave.remove();
+    }, 600);
+  });
 
   // --- NAVIGATION ROUTER ---
   const navLinks = document.querySelectorAll('[data-route]');
@@ -135,12 +228,23 @@ document.addEventListener('DOMContentLoaded', () => {
       initCandidateWizard();
       return;
     }
+    const prevStep = wizardState.currentStep || 1;
     wizardState.currentStep = stepNum;
+
     for (let i = 1; i <= 4; i++) {
       const pane = document.getElementById(`step-${i}-content`);
       if (pane) {
-        if (i === stepNum) pane.classList.remove('hidden');
-        else pane.classList.add('hidden');
+        pane.classList.remove('animate-slide-right', 'animate-slide-left');
+        if (i === stepNum) {
+          pane.classList.remove('hidden');
+          if (stepNum > prevStep) {
+            pane.classList.add('animate-slide-right');
+          } else if (stepNum < prevStep) {
+            pane.classList.add('animate-slide-left');
+          }
+        } else {
+          pane.classList.add('hidden');
+        }
       }
     }
 
@@ -163,27 +267,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (stepNum === 4) renderStep4Summary();
   }
 
-  // STEP 1 NAVIGATION
+  // STEP 1 NAVIGATION (STRICT VALIDATION & ANTI-XSS / INJECTION)
   document.getElementById('btn-next-step-1')?.addEventListener('click', () => {
-    const fn = document.getElementById('wiz-fullname').value.trim();
-    const stId = document.getElementById('wiz-studentid').value.trim();
-    const em = document.getElementById('wiz-email').value.trim();
-    const ph = document.getElementById('wiz-phone').value.trim();
+    const rawFn = document.getElementById('wiz-fullname').value.trim();
+    const rawStId = document.getElementById('wiz-studentid').value.trim();
+    const rawEm = document.getElementById('wiz-email').value.trim();
+    const rawPh = document.getElementById('wiz-phone').value.trim();
+    const rawCl = document.getElementById('wiz-class').value.trim();
 
-    if (!fn || !stId || !em || !ph) {
-      window.UI.showToast('Vui lòng điền đầy đủ các thông tin bắt buộc (*)', 'warning');
-      return;
+    try {
+      const cleanInfo = store.validateCandidateInput({
+        fullName: rawFn,
+        studentId: rawStId,
+        email: rawEm,
+        phone: rawPh,
+        academicClass: rawCl
+      });
+
+      wizardState.personalInfo = cleanInfo;
+      goToStep(2);
+    } catch (err) {
+      window.UI.showToast(err.message, 'warning');
     }
-
-    wizardState.personalInfo = {
-      fullName: fn,
-      studentId: stId,
-      email: em,
-      phone: ph,
-      academicClass: document.getElementById('wiz-class').value.trim()
-    };
-
-    goToStep(2);
   });
 
   // STEP 2: Departments Grid
@@ -196,39 +301,25 @@ document.addEventListener('DOMContentLoaded', () => {
     departments.forEach(dept => {
       const isChecked = wizardState.selectedDeptIds.includes(dept.id);
       const card = document.createElement('div');
-      card.className = `p-6 rounded-3xl border transition-all flex flex-col justify-between cursor-pointer pro-card-interactive mouse-glow-card ${
-        isChecked ? 'bg-orange-50/70 border-[#C23B22] ring-2 ring-[#C23B22]/60 shadow-md' : 'bg-white border-stone-200 hover:border-stone-400 hover:shadow-card'
+      card.className = `p-5 sm:p-6 rounded-3xl border transition-all flex flex-col justify-between cursor-pointer pro-card-interactive mouse-glow-card select-none ${
+        isChecked ? 'bg-orange-50/70 border-[#C23B22] ring-2 ring-[#C23B22]/60 shadow-md animate-pop' : 'bg-white border-stone-200 hover:border-stone-400 hover:shadow-card'
       }`;
 
       card.innerHTML = `
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <span class="w-8 h-8 rounded-xl bg-stone-100 border border-stone-200 text-stone-800 font-black flex items-center justify-center text-xs">
-              ${dept.short.charAt(0)}
-            </span>
-            <button type="button" class="btn-open-jd text-[11px] font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 px-3 py-1 rounded-xl transition-all" data-dept="${dept.id}">
-              Chi tiết JD ↗
-            </button>
-          </div>
-          <h4 class="font-black text-stone-900 text-base mb-1.5">${dept.name}</h4>
-          <p class="text-xs text-stone-600 line-clamp-3 leading-relaxed mb-4">${dept.desc}</p>
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <h4 class="font-black text-stone-900 text-base sm:text-lg tracking-tight">${dept.name}</h4>
+          <input type="checkbox" class="dept-checkbox w-4 h-4 rounded text-[#C23B22] cursor-pointer pointer-events-none" ${isChecked ? 'checked' : ''}>
         </div>
-        <div class="pt-3.5 border-t border-stone-100 flex items-center justify-between">
+        <div class="pt-3 border-t border-stone-100 flex items-center justify-between">
           <span class="text-xs font-black ${isChecked ? 'text-[#C23B22]' : 'text-stone-500'}">
-            ${isChecked ? '✓ Đã chọn ban này' : '+ Chọn ban này'}
+            ${isChecked ? '✓ Đã chọn ban này' : '+ Bấm để chọn ban này'}
           </span>
-          <input type="checkbox" class="dept-checkbox w-4 h-4 rounded text-[#C23B22] cursor-pointer" ${isChecked ? 'checked' : ''}>
+          <span class="text-xs font-bold ${isChecked ? 'text-orange-700' : 'text-stone-400'}">${isChecked ? 'Đã chọn' : 'Chưa chọn'}</span>
         </div>
       `;
 
-      card.onclick = (e) => {
-        if (e.target.closest('.btn-open-jd')) return;
+      card.onclick = () => {
         toggleDeptSelection(dept.id);
-      };
-
-      card.querySelector('.btn-open-jd').onclick = (e) => {
-        e.stopPropagation();
-        openJdModal(dept.id);
       };
 
       container.appendChild(card);
@@ -345,67 +436,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatSlotDetail = (slot) => {
       const [yy, mm, dd] = (slot.date || '').split('-');
       const ivNames = (slot.interviewers || []).map(i => i.fullName).join(', ') || 'Ban Tuyển Quân';
-      const isWaitlist = slot.isFull || (slot.bookedCount >= slot.capacity);
 
       return `
-        <div class="p-4 rounded-2xl border text-xs text-slate-700 space-y-2 ${
-          isWaitlist ? 'bg-amber-50/80 border-amber-300 shadow-sm' : 'bg-orange-50/70 border-orange-200'
-        }">
+        <div class="p-4 rounded-2xl border text-xs text-slate-700 space-y-2 bg-orange-50/70 border-orange-200">
           <div class="flex items-center justify-between font-black">
             <span class="text-orange-700 uppercase tracking-wider text-[11px]">${slot.dept.name}</span>
-            ${isWaitlist ? `
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-950 border border-amber-400 animate-pulse">
-                ⏳ Đăng Ký Hàng Chờ (Waitlist)
-              </span>
-            ` : `
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                ✓ Ca Chính Thức
-              </span>
-            `}
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              ✓ Ca Chính Thức
+            </span>
           </div>
 
           <div class="font-black text-slate-900 text-sm">${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} (Ngày ${dd}/${mm}/${yy})</div>
-          <div>📍 ${slot.type === 'online' ? 'Online: ' + (slot.meetUrl || 'Google Meet') : slot.location}</div>
+          <div>📍 Địa điểm: <strong>${escapeHtml(slot.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</strong></div>
           <div>📌 Sức chứa: <strong>${slot.capacity} ứng viên / ca</strong></div>
-
-          ${isWaitlist ? `
-            <div class="mt-2.5 p-3 rounded-xl bg-amber-100/90 text-amber-950 font-medium text-[11px] border border-amber-300/80 leading-relaxed text-left space-y-1">
-              <div class="font-bold flex items-center gap-1.5 text-amber-900">
-                <span>⚠️</span>
-                <span>LƯU Ý VỀ CA HÀNG CHỜ (WAITLIST):</span>
-              </div>
-              <p>
-                Ca phỏng vấn này hiện đã đủ 2/2 slot. Bạn đang đăng ký vào <strong>Hàng chờ</strong>. Hệ thống sẽ tự động đôn bạn lên khi có người hủy, đồng thời bạn hãy <strong>nhắn tin ngay cho Fanpage MCC.UEB</strong> sau khi hoàn tất để được ưu tiên hỗ trợ nhé!
-              </p>
-            </div>
-          ` : ''}
         </div>
       `;
     };
 
-    const hasAnyWaitlist = (slot1 && (slot1.isFull || slot1.bookedCount >= slot1.capacity)) || 
-                           (slot2 && (slot2.isFull || slot2.bookedCount >= slot2.capacity));
-
     const submitBtn = document.getElementById('btn-submit-registration');
     if (submitBtn) {
-      if (hasAnyWaitlist) {
-        submitBtn.innerHTML = '⏳ Xác nhận đăng ký Hàng chờ (Waitlist)';
-        submitBtn.className = 'px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-sm shadow-xl shadow-amber-600/30 transition-all flex items-center gap-2';
-      } else {
-        submitBtn.innerHTML = '🔥 Xác nhận đăng ký ca';
-        submitBtn.className = 'px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm shadow-xl shadow-orange-600/30 transition-all flex items-center gap-2';
-      }
+      submitBtn.innerHTML = '🔥 Xác nhận đăng ký ca';
+      submitBtn.className = 'px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm shadow-xl shadow-orange-600/30 transition-all flex items-center gap-2';
     }
 
     container.innerHTML = `
       <div class="p-5 rounded-3xl bg-slate-50 border border-slate-200 space-y-3">
         <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Thông Tin Cá Nhân:</h4>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
-          <div>Họ và tên: <strong class="text-slate-900">${info.fullName}</strong></div>
-          <div>Mã sinh viên (MSV): <strong class="text-slate-900">${info.studentId}</strong></div>
-          <div>Email: <strong class="text-slate-900">${info.email}</strong></div>
-          <div>SĐT: <strong class="text-slate-900">${info.phone}</strong></div>
-          ${info.academicClass ? `<div>Lớp: <strong>${info.academicClass}</strong></div>` : ''}
+          <div>Họ và tên: <strong class="text-slate-900">${escapeHtml(info.fullName)}</strong></div>
+          <div>Mã sinh viên (MSV): <strong class="text-slate-900">${escapeHtml(info.studentId)}</strong></div>
+          <div>Email: <strong class="text-slate-900">${escapeHtml(info.email)}</strong></div>
+          <div>SĐT: <strong class="text-slate-900">${escapeHtml(info.phone)}</strong></div>
+          ${info.academicClass ? `<div>Lớp: <strong>${escapeHtml(info.academicClass)}</strong></div>` : ''}
         </div>
       </div>
 
@@ -448,23 +510,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showSuccessModal(result.candidate, result.registrations);
       window.UI.showToast('Đăng ký ca phỏng vấn thành công!', 'success');
 
-      // Tự động kích hoạt gửi Email xác nhận lịch phỏng vấn
-      if (window.EmailService) {
-        result.registrations.forEach(r => {
-          const slot = store.getSlotById(r.slotId);
-          const dept = store.getDepartmentById(r.departmentId);
-          window.EmailService.sendBookingConfirmationEmail({
-            recipientEmail: result.candidate.email,
-            candidateName: result.candidate.fullName,
-            bookingCode: r.bookingCode,
-            deptName: dept?.name,
-            slotTime: slot?.shiftLabel || `${slot?.startTime} - ${slot?.endTime}`,
-            slotDate: slot?.date,
-            location: slot?.type === 'online' ? 'Online Google Meet' : slot?.location
-          });
-        });
-      }
-
       // Reset Wizard
       document.getElementById('wizard-form')?.reset();
       wizardState.personalInfo = {};
@@ -495,6 +540,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('success-modal');
     if (!modal) return;
 
+    // Trigger celebration confetti cannon
+    triggerConfetti();
+
+    // Re-trigger official stamp seal drop animation
+    const stampEl = document.getElementById('success-modal-stamp');
+    if (stampEl) {
+      stampEl.classList.remove('animate-stamp');
+      void stampEl.offsetWidth; // Force reflow
+      stampEl.classList.add('animate-stamp');
+    }
+
     const container = document.getElementById('success-registrations-list');
     container.innerHTML = '';
     const activeCamp = store.getActiveCampaign();
@@ -502,107 +558,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const badge = document.getElementById('success-modal-badge');
     const title = document.getElementById('success-modal-title');
     const subtitle = document.getElementById('success-modal-subtitle');
-    const hasWaitlist = registrations.some(r => r.status === 'waitlist');
 
-    if (hasWaitlist) {
-      if (badge) {
-        badge.className = 'text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 inline-block';
-        badge.textContent = '⏳ ĐÃ GHI NHẬN VÀO HÀNG CHỜ (WAITLIST)';
-      }
-      if (title) {
-        title.textContent = 'Hồ Sơ Đang Trong Danh Sách Chờ!';
-      }
-      if (subtitle) {
-        subtitle.textContent = 'Ca bạn chọn hiện đã đủ 2/2. Bạn vui lòng chờ thông báo hoặc nhắn tin Fanpage để được hỗ trợ sắp xếp nhé.';
-      }
-    } else {
-      if (badge) {
-        badge.className = 'text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200 inline-block';
-        badge.textContent = 'ĐĂNG KÝ THÀNH CÔNG';
-      }
-      if (title) {
-        title.textContent = 'Hẹn Gặp Bạn Tại Buổi Phỏng Vấn!';
-      }
-      if (subtitle) {
-        subtitle.textContent = 'Hãy lưu lại mã hồ sơ hoặc dùng MSV + Email để tra cứu / đổi ca khi cần.';
-      }
+    if (badge) {
+      badge.className = 'text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200 inline-block';
+      badge.textContent = 'ĐĂNG KÝ THÀNH CÔNG';
+    }
+    if (title) {
+      title.textContent = 'Hẹn Gặp Bạn Tại Buổi Phỏng Vấn!';
+    }
+    if (subtitle) {
+      subtitle.textContent = 'Hãy lưu lại mã hồ sơ hoặc dùng MSV + Email để tra cứu / đổi ca khi cần.';
     }
 
     registrations.forEach(reg => {
       const slot = store.getSlotById(reg.slotId);
       const dept = store.getDepartmentById(reg.departmentId);
       const [yy, mm, dd] = (slot?.date || '').split('-');
-      const isWaitlist = reg.status === 'waitlist';
 
       const item = document.createElement('div');
-      item.className = `p-4 rounded-2xl border text-xs text-slate-700 space-y-2.5 ${
-        isWaitlist ? 'bg-amber-50/80 border-amber-300 shadow-sm' : 'bg-orange-50 border-orange-200'
-      }`;
+      item.className = 'p-4 rounded-2xl border text-xs text-slate-700 space-y-2.5 bg-orange-50 border-orange-200';
       item.innerHTML = `
-        <div class="flex items-center justify-between font-black mb-1">
+        <div class="flex flex-wrap items-center justify-between font-black gap-2 mb-1">
           <span class="text-orange-700 uppercase font-bold">${dept.name}</span>
           <div class="flex items-center gap-1.5">
-            ${isWaitlist ? '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-950 border border-amber-400 animate-pulse">⏳ Hàng chờ (Waitlist)</span>' : ''}
-            <span class="font-mono bg-white px-2 py-0.5 rounded-lg border border-orange-200">${reg.bookingCode}</span>
+            <span class="font-mono bg-white px-2 py-0.5 rounded-lg border border-orange-200 text-xs">${reg.bookingCode}</span>
+            <button type="button" class="btn-copy-code px-2.5 py-1 text-[11px] font-bold rounded-lg border border-orange-200 bg-white hover:bg-orange-100 text-orange-800 transition-all flex items-center gap-1 cursor-pointer" data-code="${reg.bookingCode}">
+              <span>📋</span> <span>Sao chép</span>
+            </button>
           </div>
         </div>
-        <div>Thời gian ca chờ: <strong>${slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime)} (Ngày ${dd}/${mm}/${yy})</strong></div>
-        <div class="text-slate-500">Địa điểm: ${slot?.type === 'online' ? 'Online Meet' : slot?.location}</div>
-        ${isWaitlist ? `
-          <div class="mt-2 p-3.5 rounded-2xl bg-amber-100/90 text-amber-950 font-medium text-[11px] border border-amber-300/80 leading-relaxed text-left space-y-2">
-            <div class="font-bold flex items-center gap-1.5 text-amber-900">
-              <span>📢</span>
-              <span>BẠN VUI LÒNG CHỜ & NHẮN TIN FANPAGE NHÉ:</span>
-            </div>
-            <p>
-              Hệ thống sẽ tự động đôn bạn lên khi có người đổi ca hoặc nhường chỗ. Để chúng mình ghi nhận trường hợp đặc biệt của bạn, <strong>bạn hãy nhắn tin ngay cho Fanpage MCC.UEB</strong> kèm MSV: <strong>${candidate.studentId}</strong> nhé!
-            </p>
-            <div class="pt-1">
-              <a href="https://www.facebook.com/MCC.UEB" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all">
-                <span>💬</span> Nhắn tin Fanpage MCC.UEB ngay →
-              </a>
-            </div>
-          </div>
-        ` : ''}
+        <div>Thời gian ca phỏng vấn: <strong>${slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime)} (Ngày ${dd}/${mm}/${yy})</strong></div>
+        <div class="text-slate-500">📍 Địa điểm: ${escapeHtml(slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</div>
       `;
+
+      const copyBtn = item.querySelector('.btn-copy-code');
+      if (copyBtn) {
+        copyBtn.onclick = async (e) => {
+          e.stopPropagation();
+          try {
+            await navigator.clipboard.writeText(reg.bookingCode);
+            copyBtn.classList.add('copied');
+            copyBtn.innerHTML = '<span>✓</span> <span>Đã sao chép!</span>';
+            setTimeout(() => {
+              copyBtn.classList.remove('copied');
+              copyBtn.innerHTML = '<span>📋</span> <span>Sao chép</span>';
+            }, 2000);
+          } catch (err) {
+            window.UI.showToast(`Mã đơn: ${reg.bookingCode}`, 'info');
+          }
+        };
+      }
+
       container.appendChild(item);
     });
 
-    const gcalBtn = document.getElementById('btn-success-gcal');
-    if (gcalBtn) {
-      gcalBtn.onclick = () => {
-        const reg = registrations[0];
-        const slot = store.getSlotById(reg.slotId);
-        const url = window.CalendarHelper.createGoogleCalendarUrl(candidate, slot, activeCamp);
-        window.open(url, '_blank');
-      };
-    }
-
-    const icsBtn = document.getElementById('btn-success-ics');
-    if (icsBtn) {
-      icsBtn.onclick = () => {
-        const reg = registrations[0];
-        const slot = store.getSlotById(reg.slotId);
-        window.CalendarHelper.downloadIcsFile(candidate, slot, activeCamp);
-        window.UI.showToast('Đã tải file lịch .ics', 'info');
-      };
-    }
-
     modal.classList.remove('hidden');
-  }
-
-  function openJdModal(deptId) {
-    const dept = store.getDepartmentById(deptId);
-    if (!dept || !dept.jd) return;
-
-    document.getElementById('jd-dept-name').textContent = dept.name;
-    document.getElementById('jd-overview').textContent = dept.jd.overview || dept.desc;
-
-    document.getElementById('jd-tasks-list').innerHTML = (dept.jd.tasks || []).map(t => `<li class="flex items-start gap-2"><span>📌</span><span>${t}</span></li>`).join('');
-    document.getElementById('jd-reqs-list').innerHTML = (dept.jd.requirements || []).map(r => `<li class="flex items-start gap-2"><span>✨</span><span>${r}</span></li>`).join('');
-    document.getElementById('jd-benefits-list').innerHTML = (dept.jd.benefits || []).map(b => `<li class="flex items-start gap-2"><span>🎁</span><span>${b}</span></li>`).join('');
-
-    document.getElementById('jd-modal')?.classList.remove('hidden');
   }
 
   // --- CANDIDATE LOOKUP & EMAIL OTP FLOW ---
@@ -662,10 +672,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const formReqOtp = document.getElementById('form-request-otp');
   if (formReqOtp) {
-    formReqOtp.addEventListener('submit', (e) => {
+    formReqOtp.addEventListener('submit', async (e) => {
       e.preventDefault();
       const stId = document.getElementById('lookup-studentid').value.trim();
-      const email = document.getElementById('lookup-email').value.trim();
+      const email = document.getElementById('lookup-email').value.trim().toLowerCase();
+      const btnSubmitReq = document.getElementById('btn-submit-request-otp') || formReqOtp.querySelector('button[type="submit"]');
+
+      // Ràng buộc kiểm tra đầu vào trước khi cấp mã OTP
+      if (!stId || !SECURITY_REGEX.STUDENT_ID.test(stId)) {
+        window.UI.showToast('Mã sinh viên (MSV) phải gồm đúng 8 chữ số (Ví dụ: 24050001).', 'warning');
+        return;
+      }
+      if (!email || email.length > 80 || !SECURITY_REGEX.EMAIL.test(email)) {
+        window.UI.showToast('Địa chỉ email không đúng định dạng chuẩn (Ví dụ: name@gmail.com).', 'warning');
+        return;
+      }
+
+      if (btnSubmitReq) {
+        btnSubmitReq.disabled = true;
+        btnSubmitReq.classList.add('opacity-85', 'cursor-wait');
+        btnSubmitReq.innerHTML = `
+          <svg class="animate-spin -ml-0.5 h-4 w-4 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="tracking-wide animate-pulse">Đang gửi mã xác thực OTP...</span>
+        `;
+      }
 
       try {
         checkDeviceOtpSpam();
@@ -673,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Kích hoạt gửi Email OTP tự động tới hòm thư sinh viên
         if (window.EmailService) {
-          window.EmailService.sendOtpEmail({
+          await window.EmailService.sendOtpEmail({
             recipientEmail: res.email || email,
             candidateName: res.candidate?.fullName,
             studentId: res.candidate?.studentId || stId,
@@ -706,19 +739,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
       } catch (err) {
         window.UI.showToast(err.message, 'error');
+      } finally {
+        if (btnSubmitReq) {
+          btnSubmitReq.disabled = false;
+          btnSubmitReq.classList.remove('opacity-85', 'cursor-wait');
+          btnSubmitReq.innerHTML = `<span>✉️</span> <span>Gửi mã OTP xác thực</span>`;
+        }
       }
     });
   }
 
   // Nút gửi lại mã OTP
-  document.getElementById('btn-resend-otp')?.addEventListener('click', () => {
+  document.getElementById('btn-resend-otp')?.addEventListener('click', async () => {
     const stId = document.getElementById('lookup-studentid').value.trim();
-    const email = document.getElementById('lookup-email').value.trim();
+    const email = document.getElementById('lookup-email').value.trim().toLowerCase();
+    const btnResend = document.getElementById('btn-resend-otp');
+
+    if (!stId || !SECURITY_REGEX.STUDENT_ID.test(stId)) {
+      window.UI.showToast('Mã sinh viên (MSV) phải gồm đúng 8 chữ số.', 'warning');
+      return;
+    }
+    if (!email || email.length > 80 || !SECURITY_REGEX.EMAIL.test(email)) {
+      window.UI.showToast('Địa chỉ email không đúng định dạng.', 'warning');
+      return;
+    }
+
+    if (btnResend) {
+      btnResend.disabled = true;
+      btnResend.textContent = 'Đang gửi lại...';
+    }
+
     try {
       checkDeviceOtpSpam();
       const res = store.requestOtp(stId, email);
       if (window.EmailService) {
-        window.EmailService.sendOtpEmail({
+        await window.EmailService.sendOtpEmail({
           recipientEmail: res.email || email,
           candidateName: res.candidate?.fullName,
           studentId: res.candidate?.studentId || stId,
@@ -731,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (otpInput) { otpInput.value = ''; otpInput.focus(); }
     } catch (err) {
       window.UI.showToast(err.message, 'error');
+      if (btnResend) btnResend.disabled = false;
     }
   });
 
@@ -746,10 +802,23 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const email = document.getElementById('lookup-email').value.trim();
       const otpCode = document.getElementById('lookup-otp-input').value.trim();
+      const btnVerify = document.getElementById('btn-submit-verify-otp');
 
       if (!otpCode || otpCode.length < 6) {
         window.UI.showToast('Vui lòng nhập đủ 6 chữ số mã OTP.', 'warning');
         return;
+      }
+
+      if (btnVerify) {
+        btnVerify.disabled = true;
+        btnVerify.classList.add('opacity-85', 'cursor-wait');
+        btnVerify.innerHTML = `
+          <svg class="animate-spin -ml-0.5 h-4 w-4 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="tracking-wide animate-pulse">Đang kiểm tra mã OTP...</span>
+        `;
       }
 
       try {
@@ -763,6 +832,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       } catch (err) {
         window.UI.showToast(err.message, 'error');
+      } finally {
+        if (btnVerify) {
+          btnVerify.disabled = false;
+          btnVerify.classList.remove('opacity-85', 'cursor-wait');
+          btnVerify.innerHTML = `✓ Xác thực & Mở lịch hẹn`;
+        }
       }
     });
   }
@@ -865,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${s.shiftLabel ? `${s.shiftLabel} (${s.startTime} - ${s.endTime})` : `${s.startTime} - ${s.endTime}`} • Ngày ${dd}/${mm}/${yy}
             </div>
             <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-              <span>${s.type === 'online' ? '🌐 Google Meet Online' : '📍 ' + s.location}</span>
+              <span>📍 ${escapeHtml(s.location || 'Phòng 501 - Nhà E4')}</span>
             </div>
           </div>
         </div>
@@ -935,10 +1010,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderInterviewerWorkspace() {
     const activeCamp = store.getActiveCampaign();
-    const currentAdmin = store.getCurrentAdmin();
-    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
-    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
-    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
+    const canCheckinAll = store.hasPermission('checkin:view_all');
+    const hasDept = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const isDeptLead = !canCheckinAll && hasDept;
+    const myDeptId = hasDept ? currentAdmin.deptId : null;
 
     if (isDeptLead) {
       currentInterviewerDept = myDeptId;
@@ -1075,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // 3. Registrations query (Strictly confirmed only - Exclude waitlist)
+    // 3. Registrations query (Strictly confirmed only)
     const allRegs = store.data.registrations
       .filter(r => r.campaignId === activeCamp.id && r.status === 'confirmed')
       .map(r => ({
@@ -1122,34 +1197,45 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       tr.innerHTML = `
-        <td class="px-4 py-3 font-mono font-black text-slate-800">${reg.bookingCode}</td>
+        <td class="px-4 py-3 font-mono font-black text-slate-800">${escapeHtml(reg.bookingCode)}</td>
         <td class="px-4 py-3">
-          <div class="font-bold text-slate-900">${cand.fullName || 'N/A'}</div>
-          <div class="text-[11px] text-slate-500">MSV: ${cand.studentId} • ${cand.academicClass || ''}</div>
+          <div class="font-bold text-slate-900">${escapeHtml(cand.fullName || 'N/A')}</div>
+          <div class="text-[11px] text-slate-500">MSV: ${escapeHtml(cand.studentId || '')} • ${escapeHtml(cand.academicClass || '')}</div>
         </td>
-        <td class="px-4 py-3 font-bold text-orange-700">${reg.dept?.name}</td>
+        <td class="px-4 py-3 font-bold text-orange-700">${escapeHtml(reg.dept?.name || '')}</td>
         <td class="px-4 py-3">
-          <div class="font-bold">${slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime)}</div>
-          <div class="text-[11px] text-slate-500">${dd}/${mm} • ${slot?.type === 'online' ? 'Online Meet' : slot?.location}</div>
+          <div class="font-bold">${escapeHtml(slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime) || '')}</div>
+          <div class="text-[11px] text-slate-500">${escapeHtml(dd)}/${escapeHtml(mm)} • 📍 ${escapeHtml(slot?.location || 'Phòng 501 - Nhà E4')}</div>
         </td>
         <td class="px-4 py-3 text-slate-600 font-medium">
-          <div>${cand.phone || '-'}</div>
-          <div class="text-[10px] text-slate-400">${cand.email || ''}</div>
+          <div>${escapeHtml(cand.phone || '-')}</div>
+          <div class="text-[10px] text-slate-400">${escapeHtml(cand.email || '')}</div>
         </td>
         <td class="px-4 py-3 text-right">
-          <select class="checkin-select text-xs rounded-xl border border-slate-200 py-1.5 px-3 ${checkInClasses[reg.checkInStatus]} outline-none font-bold cursor-pointer transition-all">
-            <option value="pending" ${reg.checkInStatus === 'pending' ? 'selected' : ''}>⏳ Chờ đến</option>
-            <option value="checked-in" ${reg.checkInStatus === 'checked-in' ? 'selected' : ''}>🟢 Đã đến</option>
-            <option value="absent" ${reg.checkInStatus === 'absent' ? 'selected' : ''}>🔴 Vắng mặt</option>
-          </select>
+          ${store.hasPermission('checkin:mark_status') ? `
+            <select class="checkin-select text-xs rounded-xl border border-slate-200 py-1.5 px-3 ${checkInClasses[reg.checkInStatus]} outline-none font-bold cursor-pointer transition-all">
+              <option value="pending" ${reg.checkInStatus === 'pending' ? 'selected' : ''}>⏳ Chờ đến</option>
+              <option value="checked-in" ${reg.checkInStatus === 'checked-in' ? 'selected' : ''}>🟢 Đã đến</option>
+              <option value="absent" ${reg.checkInStatus === 'absent' ? 'selected' : ''}>🔴 Vắng mặt</option>
+            </select>
+          ` : `
+            <span class="inline-block px-3 py-1 text-xs rounded-xl ${checkInClasses[reg.checkInStatus]} font-bold">
+              ${reg.checkInStatus === 'checked-in' ? '🟢 Đã đến' : reg.checkInStatus === 'absent' ? '🔴 Vắng mặt' : '⏳ Chờ đến'}
+            </span>
+          `}
         </td>
       `;
 
-      tr.querySelector('.checkin-select').onchange = (e) => {
-        store.updateCheckInStatus(reg.id, e.target.value);
-        window.UI.showToast(`Đã cập nhật trạng thái điểm danh cho [${cand.fullName}]`, 'success');
-        renderInterviewerWorkspace();
-      };
+      if (store.hasPermission('checkin:mark_status')) {
+        const sel = tr.querySelector('.checkin-select');
+        if (sel) {
+          sel.onchange = (e) => {
+            store.updateCheckInStatus(reg.id, e.target.value);
+            window.UI.showToast(`Đã cập nhật trạng thái điểm danh cho [${cand.fullName}]`, 'success');
+            renderInterviewerWorkspace();
+          };
+        }
+      }
 
       tbody.appendChild(tr);
     });
@@ -1160,11 +1246,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('form-admin-login');
     if (!form) return;
 
+    const btnSubmit = document.getElementById('btn-admin-login-submit') || form.querySelector('button[type="submit"]');
+    const userInput = document.getElementById('admin-login-username');
+    const passInput = document.getElementById('admin-login-password');
+    const quickButtons = document.querySelectorAll('.btn-quick-admin-login');
+
+    const setAdminLoginLoading = (isLoading) => {
+      if (btnSubmit) {
+        if (isLoading) {
+          btnSubmit.disabled = true;
+          btnSubmit.classList.add('opacity-85', 'cursor-wait', 'scale-[0.99]');
+          btnSubmit.classList.remove('cursor-pointer', 'hover:from-[#721418]', 'hover:to-[#8B1E22]');
+          btnSubmit.innerHTML = `
+            <svg class="animate-spin -ml-0.5 h-4 w-4 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="tracking-wide animate-pulse">Đang kiểm tra tài khoản...</span>
+          `;
+        } else {
+          btnSubmit.disabled = false;
+          btnSubmit.classList.remove('opacity-85', 'cursor-wait', 'scale-[0.99]');
+          btnSubmit.classList.add('cursor-pointer', 'hover:from-[#721418]', 'hover:to-[#8B1E22]');
+          btnSubmit.innerHTML = `
+            <span id="admin-login-btn-icon">🔐</span>
+            <span id="admin-login-btn-text">Đăng nhập</span>
+          `;
+        }
+      }
+      if (userInput) userInput.readOnly = isLoading;
+      if (passInput) passInput.readOnly = isLoading;
+      quickButtons.forEach(btn => {
+        btn.disabled = isLoading;
+        if (isLoading) {
+          btn.classList.add('pointer-events-none', 'opacity-50');
+        } else {
+          btn.classList.remove('pointer-events-none', 'opacity-50');
+        }
+      });
+    };
+
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const u = document.getElementById('admin-login-username').value;
-      const p = document.getElementById('admin-login-password').value;
+      const u = userInput ? userInput.value : '';
+      const p = passInput ? passInput.value : '';
 
+      setAdminLoginLoading(true);
       try {
         const admin = await store.authenticateAdmin(u, p);
         const roleStr = admin.role ? ` (${admin.role})` : '';
@@ -1174,6 +1301,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAdminWorkspace();
       } catch (err) {
         window.UI.showToast(err.message, 'error');
+      } finally {
+        setAdminLoginLoading(false);
       }
     };
 
@@ -1181,10 +1310,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnTogglePass = document.getElementById('btn-toggle-admin-password');
     if (btnTogglePass) {
       btnTogglePass.onclick = () => {
-        const passInput = document.getElementById('admin-login-password');
-        if (passInput) {
-          const isPass = passInput.type === 'password';
-          passInput.type = isPass ? 'text' : 'password';
+        const passEl = document.getElementById('admin-login-password');
+        if (passEl) {
+          const isPass = passEl.type === 'password';
+          passEl.type = isPass ? 'text' : 'password';
           btnTogglePass.textContent = isPass ? '🙈' : '👁️';
           btnTogglePass.title = isPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu';
         }
@@ -1192,20 +1321,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Quick demo login buttons
-    document.querySelectorAll('.btn-quick-admin-login').forEach(btn => {
-      btn.onclick = () => {
+    quickButtons.forEach(btn => {
+      btn.onclick = async () => {
         const u = btn.getAttribute('data-user');
         const p = btn.getAttribute('data-pass');
-        document.getElementById('admin-login-username').value = u;
-        document.getElementById('admin-login-password').value = p;
+        if (userInput) userInput.value = u;
+        if (passInput) passInput.value = p;
+        setAdminLoginLoading(true);
         try {
-          const admin = store.authenticateAdmin(u, p);
+          const admin = await store.authenticateAdmin(u, p);
           window.UI.showToast(`Đăng nhập nhanh thành công: ${admin.fullName}`, 'success');
           currentActiveAdminTab = 'slots';
           currentInterviewerDept = (admin.deptId && admin.deptId !== 'all') ? admin.deptId : 'all';
           renderAdminWorkspace();
         } catch (err) {
           window.UI.showToast(err.message, 'error');
+        } finally {
+          setAdminLoginLoading(false);
         }
       };
     });
@@ -1291,10 +1423,26 @@ document.addEventListener('DOMContentLoaded', () => {
         campSelect.appendChild(opt);
       });
       campSelect.value = activeCamp.id;
+
+      // Khi chỉ có 1 mùa tuyển (Gen XVI), khóa selector thành badge cố định đẹp mắt để tránh bấm nhầm
+      if (campaigns.length <= 1) {
+        campSelect.disabled = true;
+        campSelect.className = 'px-3 py-1 text-xs font-black rounded-xl border border-orange-200 bg-orange-100 text-[#8B1E22] cursor-default select-none shadow-xs';
+      } else {
+        campSelect.disabled = false;
+        campSelect.className = 'px-3 py-1 text-xs font-bold rounded-xl border border-orange-200 bg-orange-50 text-orange-800 outline-none cursor-pointer';
+      }
+
       campSelect.onchange = () => {
-        store.setActiveCampaign(campSelect.value);
-        window.UI.showToast(`Đã chuyển sang đợt tuyển [${campSelect.options[campSelect.selectedIndex].text}]`, 'info');
-        renderAdminWorkspace();
+        const targetCampId = campSelect.value;
+        const targetName = campSelect.options[campSelect.selectedIndex]?.text || '';
+        if (confirm(`Bạn có chắc chắn muốn chuyển sang đợt tuyển [${targetName}] không?\n\n(Thao tác này sẽ thay đổi đợt tuyển hiển thị trên toàn hệ thống)`)) {
+          store.setActiveCampaign(targetCampId);
+          window.UI.showToast(`Đã chuyển sang đợt tuyển [${targetName}]`, 'info');
+          renderAdminWorkspace();
+        } else {
+          campSelect.value = store.getActiveCampaign().id;
+        }
       };
     }
 
@@ -1312,44 +1460,55 @@ document.addEventListener('DOMContentLoaded', () => {
       if (timeInput) timeInput.value = `${hh}:${min}`;
     }
 
-    // Configure Action Buttons & Inputs for Full Access (Ban Chủ Nhiệm, Mentor, Ban Nhân Sự)
-    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
-    ['btn-open-new-campaign-modal', 'btn-open-import-modal', 'sidebar-create-campaign-container'].forEach(id => {
+    // Configure Action Buttons based on Granular Permissions
+    const canCreateCampaign = store.hasPermission('system:manage_campaign');
+    ['btn-open-new-campaign-modal', 'sidebar-create-campaign-container'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        if (!isSuperAdmin) el.classList.add('hidden');
+        if (!canCreateCampaign) el.classList.add('hidden');
         else el.classList.remove('hidden');
       }
     });
 
-    // Configure Deadline Card Visibility (Exclusive to Ban Chủ Nhiệm, Mentor, Ban Nhân Sự)
+    const canImportCsv = store.hasPermission('slots:import_csv');
+    const btnImportModal = document.getElementById('btn-open-import-modal');
+    if (btnImportModal) {
+      if (!canImportCsv) btnImportModal.classList.add('hidden');
+      else btnImportModal.classList.remove('hidden');
+    }
+
+    // Configure Deadline Card Visibility
     const deadlineBox = document.getElementById('admin-deadline-card-box');
     if (deadlineBox) {
-      if (isSuperAdmin) {
+      const canSetDeadline = store.hasPermission('slots:set_deadline');
+      if (canSetDeadline) {
         deadlineBox.classList.remove('hidden');
       } else {
         deadlineBox.classList.add('hidden');
       }
     }
 
-    // Dropdown tùy chọn mở/khóa/xóa ca: chỉ mở cho Full quyền
+    // Dropdown tùy chọn mở/khóa/xóa ca: mở nếu có quyền toggle_open hoặc delete
     const slotActionsDropdown = document.getElementById('slot-actions-dropdown-container');
     if (slotActionsDropdown) {
-      if (!isSuperAdmin) slotActionsDropdown.classList.add('hidden');
+      const canManageSlots = store.hasPermission('slots:toggle_open') || store.hasPermission('slots:delete');
+      if (!canManageSlots) slotActionsDropdown.classList.add('hidden');
       else slotActionsDropdown.classList.remove('hidden');
     }
 
-    // Populate filter dropdowns with strict RBAC scoping
+    // Populate filter dropdowns with Granular Permissions scoping
     const deptSelect = document.getElementById('admin-filter-slot-dept');
     const candDeptSelect = document.getElementById('admin-cand-filter-dept');
     const departments = store.getDepartments();
-    const isDeptLead = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
-    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
-    const myDept = isDeptLead ? store.getDepartmentById(myDeptId) : null;
+    const canViewAllSlots = store.hasPermission('slots:view_all');
+    const canViewAllCands = store.hasPermission('candidates:view_all');
+    const hasDept = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const myDeptId = hasDept ? currentAdmin.deptId : null;
+    const myDept = hasDept ? store.getDepartmentById(myDeptId) : null;
 
     if (deptSelect) {
       deptSelect.innerHTML = '';
-      if (isDeptLead && myDept) {
+      if (!canViewAllSlots && hasDept && myDept) {
         deptSelect.innerHTML = `<option value="${myDept.id}">${myDept.name}</option>`;
         deptSelect.value = myDept.id;
         deptSelect.disabled = true;
@@ -1368,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (candDeptSelect) {
       candDeptSelect.innerHTML = '';
-      if (isDeptLead && myDept) {
+      if (!canViewAllCands && hasDept && myDept) {
         candDeptSelect.innerHTML = `<option value="${myDept.id}">${myDept.name}</option>`;
         candDeptSelect.value = myDept.id;
         candDeptSelect.disabled = true;
@@ -1385,16 +1544,26 @@ document.addEventListener('DOMContentLoaded', () => {
       candDeptSelect.onchange = renderAdminCandidatesTable;
     }
 
-    renderAdminSlotsTable();
-    renderAdminCandidatesTable();
-
-    // Setup Sidebar Navigation & Tabs Router
+    // Setup Sidebar Navigation & Tabs Router FIRST so navigation is always interactive
     setupAdminSidebarNav(currentAdmin);
+
+    try {
+      renderAdminSlotsTable();
+    } catch (e) {
+      console.error('Lỗi khi render bảng ca phỏng vấn:', e);
+    }
+
+    try {
+      renderAdminCandidatesTable();
+    } catch (e) {
+      console.error('Lỗi khi render danh sách ứng viên:', e);
+    }
   }
 
   let currentActiveAdminTab = 'slots';
 
   function switchAdminTab(tabId) {
+    if (!tabId) return;
     if (tabId === 'dashboard') tabId = 'slots';
     const currentAdmin = store.getCurrentAdmin();
     const isRootAdmin = currentAdmin && (
@@ -1404,14 +1573,14 @@ document.addEventListener('DOMContentLoaded', () => {
       currentAdmin.fullName?.toLowerCase() === 'admin'
     );
 
-    // Chức năng Tùy chọn chỉ duy nhất tài khoản admin được phép truy cập
-    if (tabId === 'options' && !isRootAdmin) {
+    // Chức năng Phân quyền chỉ duy nhất tài khoản admin được phép truy cập
+    if (tabId === 'permissions' && !isRootAdmin) {
       tabId = 'candidates';
     }
     currentActiveAdminTab = tabId;
 
-    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
-    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const canViewAllSlots = store.hasPermission('slots:view_all');
+    const isDeptLead = !canViewAllSlots && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
 
     // Panes map
     const panes = {
@@ -1419,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
       slots: document.getElementById('admin-pane-slots'),
       checkin: document.getElementById('admin-pane-checkin'),
       audit: document.getElementById('admin-pane-audit'),
-      options: document.getElementById('admin-pane-options')
+      permissions: document.getElementById('admin-pane-permissions')
     };
 
     // Titles map
@@ -1428,7 +1597,7 @@ document.addEventListener('DOMContentLoaded', () => {
       slots: 'Quản lý lịch phỏng vấn',
       checkin: 'Chi tiết ca & điểm danh',
       audit: 'Lịch sử hoạt động hệ thống',
-      options: 'Cấu hình tùy chọn hệ thống'
+      permissions: 'Phân quyền tính năng từng tài khoản'
     };
 
     const titleEl = document.getElementById('admin-pane-title');
@@ -1454,12 +1623,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Check role restrictions
       let isRestricted = false;
-      if (bTab === 'dashboard' || bTab === 'settings') {
+      if (bTab === 'dashboard' || bTab === 'settings' || bTab === 'options') {
         isRestricted = true;
-      } else if (bTab === 'options' && !isRootAdmin) {
-        // Chức năng tùy chọn CHỈ HIỆN ở tài khoản admin
+      } else if (bTab === 'permissions' && !isRootAdmin) {
+        // Chức năng phân quyền CHỈ HIỆN ở tài khoản admin
         isRestricted = true;
-      } else if (isDeptLead && bTab === 'audit') {
+      } else if (bTab === 'audit' && !store.hasPermission('system:audit_log')) {
         isRestricted = true;
       }
 
@@ -1470,26 +1639,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const badge = btn.querySelector('span[id^="badge-tab-"]');
       if (bTab === tabId) {
-        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white shadow-md shadow-[#8B1E22]/25 font-bold whitespace-nowrap';
+        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all bg-gradient-to-r from-[#8B1E22] to-[#A6282E] text-white shadow-md shadow-[#8B1E22]/25 font-bold whitespace-nowrap cursor-pointer';
         if (badge) badge.className = 'shrink-0 px-2 py-0.5 text-[10px] font-black rounded-full bg-white/25 text-white ml-1';
       } else {
-        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-red-50/70 hover:text-[#8B1E22] font-bold whitespace-nowrap';
+        btn.className = 'admin-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all text-slate-700 hover:bg-red-50/70 hover:text-[#8B1E22] font-bold whitespace-nowrap cursor-pointer';
         if (badge) badge.className = 'shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 ml-1';
       }
     });
 
-    // Trigger tab-specific refresh
-    if (tabId === 'slots') renderAdminSlotsTable();
-    else if (tabId === 'candidates') renderAdminCandidatesTable();
-    else if (tabId === 'checkin') renderInterviewerWorkspace();
-    else if (tabId === 'audit') renderAdminAuditLogs();
-    else if (tabId === 'options') renderAdminOptionsPane();
+    // Trigger tab-specific refresh safely
+    try {
+      if (tabId === 'slots') renderAdminSlotsTable();
+      else if (tabId === 'candidates') renderAdminCandidatesTable();
+      else if (tabId === 'checkin') renderInterviewerWorkspace();
+      else if (tabId === 'audit') renderAdminAuditLogs();
+      else if (tabId === 'permissions') renderAdminPermissionsWorkspace();
+    } catch (err) {
+      console.error(`Lỗi khi tải nội dung tab [${tabId}]:`, err);
+    }
   }
 
+  // Luôn công khai hàm switchAdminTab ra window để click trên HTML hay JS đều hoạt động 100%
+  window.switchAdminTab = switchAdminTab;
+
   function setupAdminSidebarNav(currentAdmin) {
-    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
-    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
-    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
     const isRootAdmin = currentAdmin && (
       currentAdmin.id === 'adm-root-admin' || 
       currentAdmin.username?.toLowerCase() === 'admin.mcc@gmail.com' ||
@@ -1497,12 +1670,16 @@ document.addEventListener('DOMContentLoaded', () => {
       currentAdmin.fullName?.toLowerCase() === 'admin'
     );
 
+    const canViewAllSlots = store.hasPermission('slots:view_all');
+    const isDeptLead = !canViewAllSlots && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
+
     // 1. Default Tab Logic - Candidates is the universal landing tab
-    if (!isRootAdmin && currentActiveAdminTab === 'options') {
+    if (!isRootAdmin && currentActiveAdminTab === 'permissions') {
       currentActiveAdminTab = 'candidates';
-    } else if (isDeptLead && (currentActiveAdminTab === 'audit' || currentActiveAdminTab === 'dashboard' || currentActiveAdminTab === 'settings')) {
+    } else if (!store.hasPermission('system:audit_log') && currentActiveAdminTab === 'audit') {
       currentActiveAdminTab = 'candidates';
-    } else if (!currentActiveAdminTab || currentActiveAdminTab === 'dashboard') {
+    } else if (!currentActiveAdminTab || currentActiveAdminTab === 'dashboard' || currentActiveAdminTab === 'options') {
       currentActiveAdminTab = 'candidates';
     }
 
@@ -1521,14 +1698,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const candsCountBadge = document.getElementById('badge-tab-cands-count');
     if (slotsCountBadge) {
       const campSlots = store.getSlots(activeCamp.id, isDeptLead ? myDeptId : null);
-      slotsCountBadge.textContent = `${campSlots.length} ca`;
+      animateCounter(slotsCountBadge, campSlots.length, 650, 'ca');
     }
     if (candsCountBadge) {
       if (isDeptLead) {
-        const deptRegs = (store.data.registrations || []).filter(r => r.campaignId === activeCamp.id && r.departmentId === myDeptId && (r.status === 'confirmed' || r.status === 'waitlist'));
-        candsCountBadge.textContent = `${deptRegs.length} đơn`;
+        const deptRegs = (store.data.registrations || []).filter(r => r.campaignId === activeCamp.id && r.departmentId === myDeptId && r.status === 'confirmed');
+        animateCounter(candsCountBadge, deptRegs.length, 650, 'đơn');
       } else {
-        candsCountBadge.textContent = `${stats.totalRegistrations} đơn`;
+        animateCounter(candsCountBadge, stats.totalRegistrations, 650, 'đơn');
       }
     }
 
@@ -1560,13 +1737,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAdminSlotsTable() {
     const activeCamp = store.getActiveCampaign();
     const currentAdmin = store.getCurrentAdmin();
-    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
-    const isCanEditCapacity = currentAdmin && (currentAdmin.role === 'Ban Chủ Nhiệm' || currentAdmin.role === 'Mentor');
-    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
-    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
+    const canViewAllSlots = store.hasPermission('slots:view_all');
+    const isCanEditCapacity = store.hasPermission('slots:edit_capacity');
+    const canToggleOpen = store.hasPermission('slots:toggle_open');
+    const canDeleteSlots = store.hasPermission('slots:delete');
+    const hasDept = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const myDeptId = hasDept ? currentAdmin.deptId : null;
 
     let deptFilter = document.getElementById('admin-filter-slot-dept')?.value || 'all';
-    if (isDeptLead) {
+    if (!canViewAllSlots && hasDept) {
       deptFilter = myDeptId;
     }
     const slots = store.getSlots(activeCamp.id, deptFilter);
@@ -1574,7 +1753,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sync badge count
     const slotsCountBadge = document.getElementById('badge-tab-slots-count');
     if (slotsCountBadge) {
-      const allLeadSlots = store.getSlots(activeCamp.id, isDeptLead ? myDeptId : null);
+      const allLeadSlots = store.getSlots(activeCamp.id, (!canViewAllSlots && hasDept) ? myDeptId : null);
       slotsCountBadge.textContent = `${allLeadSlots.length} ca`;
     }
 
@@ -1585,7 +1764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectAllCheckbox = document.getElementById('chk-select-all-slots');
     if (selectAllCheckbox) {
       selectAllCheckbox.checked = false;
-      if (isDeptLead) selectAllCheckbox.disabled = true;
+      if (!canToggleOpen && !canDeleteSlots) selectAllCheckbox.disabled = true;
       else selectAllCheckbox.disabled = false;
     }
     updateSlotSelectionBadge();
@@ -1601,11 +1780,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.className = 'border-b border-slate-100 hover:bg-slate-50';
 
-      const checkColHtml = isSuperAdmin
+      const checkColHtml = (canToggleOpen || canDeleteSlots)
         ? `<input type="checkbox" value="${slot.id}" class="chk-slot-item rounded text-orange-600 cursor-pointer">`
         : `<span class="text-slate-300">•</span>`;
 
-      const actionColHtml = isSuperAdmin
+      const actionColHtml = canToggleOpen
         ? `<button class="btn-toggle-open px-3 py-1 text-[11px] font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
             slot.isOpen ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
           }">
@@ -1620,29 +1799,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const capacityColHtml = isCanEditCapacity ? `
         <div class="flex items-center gap-1.5 whitespace-nowrap">
           <span class="font-black ${slot.isFull ? 'text-rose-600' : 'text-slate-900'}">${slot.bookedCount}/</span>
-          <select class="sel-slot-capacity text-xs font-black bg-white border border-slate-300 rounded-lg px-1.5 py-0.5 text-slate-800 cursor-pointer shadow-2xs hover:border-[#8B1E22] transition-colors" title="Ban Chủ Nhiệm / Mentor: Bấm để đổi số lượng ứng viên cho ca này (1-3)">
+          <select class="sel-slot-capacity text-xs font-black bg-white border border-slate-300 rounded-lg px-1.5 py-0.5 text-slate-800 cursor-pointer shadow-2xs hover:border-[#8B1E22] transition-colors" title="Đổi số lượng ứng viên cho ca này (1-3)">
             <option value="1" ${slot.capacity === 1 ? 'selected' : ''}>1</option>
             <option value="2" ${slot.capacity === 2 || !slot.capacity ? 'selected' : ''}>2</option>
             <option value="3" ${slot.capacity === 3 ? 'selected' : ''}>3</option>
           </select>
           ${slot.isFull ? '<span class="text-[10px] text-rose-600 font-bold">(Hết chỗ)</span>' : ''}
-          ${slot.waitlistCount > 0 ? `
-            <button type="button" onclick="window.__openWaitlistModal('${slot.id}')" class="btn-open-waitlist px-2 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-black inline-flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 shadow-sm whitespace-nowrap" title="Bấm để xem thông tin ứng viên đang chờ">
-              <span>⏳</span>
-              <span>${slot.waitlistCount} chờ</span>
-            </button>
-          ` : ''}
         </div>
       ` : `
         <div class="flex items-center gap-1.5 whitespace-nowrap">
           <span class="font-black ${slot.isFull ? 'text-rose-600' : 'text-slate-900'}">${slot.bookedCount}/${slot.capacity || 2}</span>
           ${slot.isFull ? '<span class="text-[10px] text-rose-600 font-bold">(Hết chỗ)</span>' : ''}
-          ${slot.waitlistCount > 0 ? `
-            <button type="button" onclick="window.__openWaitlistModal('${slot.id}')" class="btn-open-waitlist px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-black inline-flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 shadow-sm whitespace-nowrap" title="Bấm để xem thông tin ứng viên đang chờ">
-              <span>⏳</span>
-              <span>${slot.waitlistCount} chờ (Xem)</span>
-            </button>
-          ` : ''}
         </div>
       `;
 
@@ -1652,7 +1819,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td class="px-4 py-3 whitespace-nowrap font-bold text-[#8B1E22]">${slot.dept.name}</td>
         <td class="px-4 py-3 whitespace-nowrap font-bold">${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} <span class="text-slate-400 font-normal">(${dd}/${mm})</span></td>
-        <td class="px-4 py-3 whitespace-nowrap text-slate-600">${slot.type === 'online' ? 'Online Meet' : slot.location}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-slate-600">📍 ${escapeHtml(slot.location || 'Phòng 501 - Nhà E4')}</td>
         <td class="px-4 py-3 text-slate-600 truncate max-w-xs" title="${ivList}">
           ${(slot.interviewers && slot.interviewers.length >= 2) ? ivList : `<span class="text-rose-600 font-bold">⚠️ Cần ≥ 2 người (hiện có ${slot.interviewers?.length || 0})</span>`}
         </td>
@@ -1686,10 +1853,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      if (isSuperAdmin) {
+      if (canToggleOpen || canDeleteSlots) {
         const chk = tr.querySelector('.chk-slot-item');
         if (chk) chk.onchange = updateSlotSelectionBadge;
+      }
 
+      if (canToggleOpen) {
         const toggleBtn = tr.querySelector('.btn-toggle-open');
         if (toggleBtn) {
           toggleBtn.onclick = () => {
@@ -1708,105 +1877,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.__openWaitlistModal = function(slotId, e) {
-    if (e && e.stopPropagation) e.stopPropagation();
-    const slot = store.getSlots().find(s => s.id === slotId) || store.getSlotById(slotId);
-    if (!slot) {
-      console.warn('Slot not found:', slotId);
-      return;
-    }
-    openWaitlistDetailModal(slot);
-  };
-
-  function openWaitlistDetailModal(slot) {
-    const modal = document.getElementById('modal-waitlist-detail');
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-
-    const [yy, mm, dd] = (slot.date || '').split('-');
-    const titleEl = document.getElementById('waitlist-modal-slot-title');
-    if (titleEl) {
-      titleEl.textContent = `${slot.dept?.name || 'Phỏng vấn'} • ${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} (Ngày ${dd}/${mm}/${yy})`;
-    }
-
-    const container = document.getElementById('waitlist-modal-candidates-list');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const waitlistRegs = (store.data.registrations || []).filter(r => r.slotId === slot.id && r.status === 'waitlist');
-
-    if (waitlistRegs.length === 0) {
-      container.innerHTML = '<div class="p-6 text-center text-slate-400">Không có ứng viên nào trong hàng chờ của ca này.</div>';
-    } else {
-      waitlistRegs.forEach(reg => {
-        const cand = (store.getCandidateById ? store.getCandidateById(reg.candidateId) : store.data.candidates.find(c => c.id === reg.candidateId)) || {};
-        const card = document.createElement('div');
-        card.className = 'p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-800 space-y-3';
-        card.innerHTML = `
-          <div class="flex items-center justify-between pb-2 border-b border-amber-200/60">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-              <strong class="text-sm text-slate-900">${cand.fullName || 'Chưa có tên'}</strong>
-              <span class="px-2 py-0.5 rounded-md bg-amber-200 text-amber-900 text-[10px] font-black">Hàng chờ #1</span>
-            </div>
-            <span class="font-mono font-bold bg-white px-2 py-0.5 rounded-lg border border-amber-200 text-orange-700">${reg.bookingCode || 'MCC-WAIT'}</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
-            <div>Mã sinh viên (MSV): <strong class="text-slate-900">${cand.studentId || '-'}</strong></div>
-            <div>Lớp / Khóa: <strong class="text-slate-900">${cand.academicClass || '-'}</strong></div>
-            <div>Email: <a href="mailto:${cand.email || ''}" class="text-indigo-600 hover:underline font-bold">${cand.email || '-'}</a></div>
-            <div>SĐT / Zalo: <a href="tel:${cand.phone || ''}" class="text-emerald-700 hover:underline font-bold">${cand.phone || '-'}</a></div>
-          </div>
-
-          <div class="pt-2 flex flex-wrap items-center justify-end gap-2 border-t border-amber-200/60">
-            <button type="button" class="btn-promote-waitlist px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all">
-              <span>⚡</span> Duyệt vào ca chính thức ngay
-            </button>
-            <button type="button" class="btn-reschedule-waitlist px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs transition-all">
-              <span>🔄</span> Đổi sang ca khác
-            </button>
-          </div>
-        `;
-
-        const btnPromote = card.querySelector('.btn-promote-waitlist');
-        if (btnPromote) {
-          btnPromote.onclick = () => {
-            if (confirm(`Bạn có chắc chắn muốn DUYỆT ứng viên [${cand.fullName}] từ Waitlist vào ca chính thức không?`)) {
-              try {
-                store.promoteWaitlistToConfirmed(reg.id, 'Admin duyệt thủ công từ danh sách Waitlist');
-                window.UI.showToast(`Đã duyệt [${cand.fullName}] vào ca chính thức thành công!`, 'success');
-                modal.classList.add('hidden');
-                renderAdminSlotsTable();
-                renderAdminCandidatesTable();
-              } catch (err) {
-                window.UI.showToast(err.message, 'error');
-              }
-            }
-          };
-        }
-
-        const btnReschedule = card.querySelector('.btn-reschedule-waitlist');
-        if (btnReschedule) {
-          btnReschedule.onclick = () => {
-            modal.classList.add('hidden');
-            openAdminOverrideModal(reg);
-          };
-        }
-
-        container.appendChild(card);
-      });
-    }
-
-    modal.querySelectorAll('.close-modal-btn').forEach(btn => {
-      btn.onclick = () => modal.classList.add('hidden');
-    });
-
-    modal.onclick = (e) => {
-      if (e.target === modal) modal.classList.add('hidden');
-    };
-  }
 
   // Handle Select All Checkbox
   document.getElementById('chk-select-all-slots')?.addEventListener('change', (e) => {
@@ -1942,18 +2012,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAdminCandidatesTable() {
     const activeCamp = store.getActiveCampaign();
     const currentAdmin = store.getCurrentAdmin();
-    const isSuperAdmin = currentAdmin && (currentAdmin.hasFullAccess || currentAdmin.deptId === 'all');
-    const isDeptLead = !isSuperAdmin && currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
-    const myDeptId = isDeptLead ? currentAdmin.deptId : null;
+    const canViewAllCands = store.hasPermission('candidates:view_all');
+    const canOverrideSlot = store.hasPermission('candidates:override_slot');
+    const hasDept = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
+    const myDeptId = hasDept ? currentAdmin.deptId : null;
 
     const searchVal = (document.getElementById('admin-cand-search')?.value || '').toLowerCase();
     let deptVal = document.getElementById('admin-cand-filter-dept')?.value || 'all';
-    if (isDeptLead) {
+    if (!canViewAllCands && hasDept) {
       deptVal = myDeptId;
     }
 
     const allRegs = store.data.registrations
-      .filter(r => r.campaignId === activeCamp.id && (!isDeptLead || r.departmentId === myDeptId) && r.status !== 'cancelled')
+      .filter(r => r.campaignId === activeCamp.id && (canViewAllCands || !hasDept || r.departmentId === myDeptId) && r.status !== 'cancelled')
       .map(r => ({
         ...r,
         candidate: store.data.candidates.find(c => c.id === r.candidateId),
@@ -1984,7 +2055,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const cand = r.candidate || {};
       const slot = r.slot;
       const isCancelled = (r.status === 'cancelled');
-      const isWaitlist = (r.status === 'waitlist');
       const tr = document.createElement('tr');
       tr.className = `border-b border-slate-100 hover:bg-slate-50 transition-colors ${isCancelled ? 'bg-slate-50/60' : ''}`;
 
@@ -1994,13 +2064,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1 w-fit">
             <span>❌</span>
             <span>Đã hủy ca</span>
-          </span>
-        `;
-      } else if (isWaitlist) {
-        statusBadge = `
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1 w-fit animate-pulse">
-            <span>⏳</span>
-            <span>Hàng chờ (Waitlist)</span>
           </span>
         `;
       } else {
@@ -2013,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
-      const actionHtml = isSuperAdmin
+      const actionHtml = canOverrideSlot
         ? `<button class="btn-open-override px-2.5 py-1 rounded-xl ${isCancelled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-red-50 text-[#8B1E22] hover:bg-[#8B1E22] hover:text-white'} font-bold transition-all text-xs cursor-pointer">
             ${isCancelled ? '🔄 Đặt lại ca' : '⚙️ Can thiệp'}
           </button>`
@@ -2022,14 +2085,14 @@ document.addEventListener('DOMContentLoaded', () => {
           </span>`;
 
       tr.innerHTML = `
-        <td class="px-4 py-3 font-mono font-black ${isCancelled ? 'text-slate-400' : 'text-[#8B1E22]'}">${r.bookingCode}</td>
+        <td class="px-4 py-3 font-mono font-black ${isCancelled ? 'text-slate-400' : 'text-[#8B1E22]'}">${escapeHtml(r.bookingCode)}</td>
         <td class="px-4 py-3">
-          <div class="font-bold text-slate-900 ${isCancelled ? 'line-through text-slate-500' : ''}">${cand.fullName || 'N/A'}</div>
-          <div class="text-[11px] text-slate-500">MSV: ${cand.studentId} • ${cand.academicClass || ''}</div>
+          <div class="font-bold text-slate-900 ${isCancelled ? 'line-through text-slate-500' : ''}">${escapeHtml(cand.fullName || 'N/A')}</div>
+          <div class="text-[11px] text-slate-500">MSV: ${escapeHtml(cand.studentId || '')} • ${escapeHtml(cand.academicClass || '')}</div>
         </td>
-        <td class="px-4 py-3 font-bold text-slate-700">${r.dept?.name || ''}</td>
+        <td class="px-4 py-3 font-bold text-slate-700">${escapeHtml(r.dept?.name || '')}</td>
         <td class="px-4 py-3 font-medium ${isCancelled ? 'line-through text-slate-400' : ''}">
-          ${slot ? (slot.shiftLabel ? `${slot.shiftLabel} (${slot.date})` : `${slot.startTime} - ${slot.endTime} (${slot.date})`) : '<span class="text-slate-400 italic font-normal">Chưa có ca (Đã hủy)</span>'}
+          ${slot ? escapeHtml(slot.shiftLabel ? `${slot.shiftLabel} (${slot.date})` : `${slot.startTime} - ${slot.endTime} (${slot.date})`) : '<span class="text-slate-400 italic font-normal">Chưa có ca (Đã hủy)</span>'}
         </td>
         <td class="px-4 py-3">
           <div class="flex flex-col gap-1">
@@ -2041,10 +2104,13 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
       `;
 
-      if (isSuperAdmin) {
-        tr.querySelector('.btn-open-override').onclick = () => {
-          openAdminOverrideModal(r);
-        };
+      if (canOverrideSlot) {
+        const btnOverride = tr.querySelector('.btn-open-override');
+        if (btnOverride) {
+          btnOverride.onclick = () => {
+            openAdminOverrideModal(r);
+          };
+        }
       }
 
       tbody.appendChild(tr);
@@ -2065,10 +2131,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('override-dept').textContent = reg.dept?.name || '';
     document.getElementById('override-current-slot').textContent = slot ? `${slot.startTime}-${slot.endTime} (${slot.date})` : 'Chưa có ca (Đơn này đã hủy)';
 
-    // Ẩn nút hủy nếu đơn đã ở trạng thái hủy rồi
+    // Ẩn nút hủy nếu đơn đã ở trạng thái hủy rồi hoặc không có quyền candidates:cancel_reg
+    const canCancel = store.hasPermission('candidates:cancel_reg');
     const cancelBtn = document.getElementById('btn-override-cancel-reg');
     if (cancelBtn) {
-      if (reg.status === 'cancelled') {
+      if (reg.status === 'cancelled' || !canCancel) {
         cancelBtn.classList.add('hidden');
       } else {
         cancelBtn.classList.remove('hidden');
@@ -2149,44 +2216,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.className = 'border-b border-slate-100 text-[11px]';
       tr.innerHTML = `
-        <td class="px-4 py-2 text-slate-400 whitespace-nowrap">${new Date(log.timestamp).toLocaleString('vi-VN')}</td>
-        <td class="px-4 py-2 font-bold text-slate-800">${log.adminName}</td>
-        <td class="px-4 py-2"><span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-800 font-mono font-bold">${log.action}</span></td>
-        <td class="px-4 py-2 text-slate-600">${log.entityType} [${log.entityId}]</td>
-        <td class="px-4 py-2 text-slate-700 italic font-medium">${log.reason || '-'}</td>
+        <td class="px-4 py-2 text-slate-400 whitespace-nowrap">${escapeHtml(new Date(log.timestamp).toLocaleString('vi-VN'))}</td>
+        <td class="px-4 py-2 font-bold text-slate-800">${escapeHtml(log.adminName || '')}</td>
+        <td class="px-4 py-2"><span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-800 font-mono font-bold">${escapeHtml(log.action || '')}</span></td>
+        <td class="px-4 py-2 text-slate-600">${escapeHtml(log.entityType || '')} [${escapeHtml(log.entityId || '')}]</td>
+        <td class="px-4 py-2 text-slate-700 italic font-medium">${escapeHtml(log.reason || '-')}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  function renderAdminOptionsPane() {
-    const toggle = document.getElementById('toggle-waitlist-feature');
-    const badge = document.getElementById('badge-waitlist-status');
-    if (toggle) {
-      const isEnabled = store.isWaitlistEnabled();
-      toggle.checked = isEnabled;
-      if (badge) {
-        badge.textContent = isEnabled ? 'Đang Bật' : 'Đã Tắt';
-        badge.className = isEnabled
-          ? 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200'
-          : 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-slate-200 text-slate-600 border border-slate-300';
-      }
-    }
-  }
 
-  document.getElementById('toggle-waitlist-feature')?.addEventListener('change', (e) => {
-    const isEnabled = e.target.checked;
-    store.setWaitlistEnabled(isEnabled);
-    const badge = document.getElementById('badge-waitlist-status');
-    if (badge) {
-      badge.textContent = isEnabled ? 'Đang Bật' : 'Đã Tắt';
-      badge.className = isEnabled
-        ? 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200'
-        : 'px-2.5 py-0.5 text-[10px] font-black rounded-full bg-slate-200 text-slate-600 border border-slate-300';
-    }
-    window.UI.showToast(`Đã ${isEnabled ? 'BẬT' : 'TẮT'} chức năng Waitlist trên toàn bộ hệ thống!`, isEnabled ? 'success' : 'info');
-    renderAdminSlotsTable();
-  });
 
   // Deadline Quick Preset Handler
   window.__setDeadlinePreset = function(preset) {
@@ -2293,7 +2333,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-download-csv-template')?.addEventListener('click', () => {
-    const template = 'DepartmentId,Date,StartTime,EndTime,Capacity,Location,Type,MeetUrl,Interviewers\nmedia,2026-09-05,08:00,10:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh\nmedia,2026-09-05,10:00,12:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh\nmedia,2026-09-05,14:00,16:00,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh\nmedia,2026-09-05,16:00,17:30,2,Phòng 501 - Nhà E4,offline,,Nguyễn Việt Hoàng;Trần Thảo Linh';
+    const template = 'DepartmentId,Date,StartTime,EndTime,Capacity,Location,Interviewers\nmedia,2026-09-05,08:00,10:00,2,Phòng 501 - Nhà E4,Nguyễn Việt Hoàng;Trần Thảo Linh\nmedia,2026-09-05,10:00,12:00,2,Phòng 501 - Nhà E4,Nguyễn Việt Hoàng;Trần Thảo Linh\nmedia,2026-09-05,14:00,16:00,2,Phòng 501 - Nhà E4,Nguyễn Việt Hoàng;Trần Thảo Linh\nmedia,2026-09-05,16:00,17:30,2,Phòng 501 - Nhà E4,Nguyễn Việt Hoàng;Trần Thảo Linh';
     const blob = new Blob(['\uFEFF' + template], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -2320,32 +2360,40 @@ document.addEventListener('DOMContentLoaded', () => {
       let startColIdx = headerParts.findIndex(h => ['starttime', 'gio_bat_dau', 'gio_batdau'].includes(h));
       let endColIdx = headerParts.findIndex(h => ['endtime', 'gio_ket_thuc', 'gio_ketthuc'].includes(h));
       let capColIdx = headerParts.findIndex(h => ['capacity', 'so_ung_vien', 'so_luong', 'so_cho'].includes(h));
-      let locColIdx = headerParts.findIndex(h => ['location', 'dia_diem'].includes(h));
-      let typeColIdx = headerParts.findIndex(h => ['type', 'hinh_thuc'].includes(h));
+      let locColIdx = headerParts.findIndex(h => ['location', 'dia_diem', 'phong'].includes(h));
 
       // Thứ tự mặc định nếu file không có header chuẩn:
-      // Dept(0), Date(1), StartTime(2), EndTime(3), Capacity(4), Location(5), Type(6)
+      // Dept(0), Date(1), StartTime(2), EndTime(3), Capacity(4), Location(5)
       if (deptColIdx === -1) deptColIdx = 0;
       if (dateColIdx === -1) dateColIdx = 1;
       if (startColIdx === -1) startColIdx = 2;
       if (endColIdx === -1) endColIdx = 3;
       if (capColIdx === -1) capColIdx = 4;
       if (locColIdx === -1) locColIdx = 5;
-      if (typeColIdx === -1) typeColIdx = 6;
 
       const activeCamp = store.getActiveCampaign();
       const slotsToAdd = [];
+
+      // Sanitize fields against CSV Formula Injection (=, +, -, @)
+      const sanitizeCsvField = (str) => {
+        if (!str || typeof str !== 'string') return '';
+        let s = str.trim();
+        if (/^[=+\-@\t\r]/.test(s)) {
+          s = s.replace(/^[=+\-@\t\r]+/, '');
+        }
+        return s;
+      };
 
       for (let i = 1; i < lines.length; i++) {
         const parts = lines[i].split(',').map(p => p.trim().replace(/^"|"$/g, ''));
         if (parts.length < 4 || (parts.length === 1 && !parts[0])) continue;
 
-        const deptId = parts[deptColIdx] || '';
+        const deptId = sanitizeCsvField(parts[deptColIdx] || '');
         const deptObj = store.getDepartmentById(deptId);
         const deptName = deptObj ? deptObj.name : (deptId || `Ban dòng ${i + 1}`);
-        const date = parts[dateColIdx] || '';
-        const startTime = parts[startColIdx] || '';
-        const endTime = parts[endColIdx] || '';
+        const date = sanitizeCsvField(parts[dateColIdx] || '');
+        const startTime = sanitizeCsvField(parts[startColIdx] || '');
+        const endTime = sanitizeCsvField(parts[endColIdx] || '');
 
         // ĐỌC VÀ KIỂM TRA BẮT BUỘC SỐ LƯỢNG ỨNG VIÊN
         const rawCap = (capColIdx < parts.length && parts[capColIdx] !== undefined) ? parts[capColIdx].trim() : '';
@@ -2360,6 +2408,8 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(`Dòng ${i + 1}: Ca ${deptName} (${startTime} - ${endTime}) có số lượng ứng viên không hợp lệ ("${rawCap}"). Sức chứa mỗi ca chỉ được phép từ 1 đến 3 ứng viên!`);
         }
 
+        const location = sanitizeCsvField((locColIdx < parts.length && parts[locColIdx]) || 'Phòng 501 - Nhà E4, 144 Xuân Thủy');
+
         slotsToAdd.push({
           campaignId: activeCamp.id,
           departmentId: deptId,
@@ -2367,8 +2417,8 @@ document.addEventListener('DOMContentLoaded', () => {
           startTime: startTime,
           endTime: endTime,
           capacity: cap,
-          location: (locColIdx < parts.length && parts[locColIdx]) || 'Phòng 501 - E4',
-          type: (typeColIdx < parts.length && parts[typeColIdx]) || 'offline',
+          location: location,
+          type: 'offline',
           isOpen: true
         });
       }
@@ -2512,11 +2562,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const noteEl = document.getElementById('confirm-cap-note');
     if (noteEl) {
-      if (newCap > oldCap && slot.waitlistCount > 0) {
-        noteEl.innerHTML = `💡 <strong>Lưu ý:</strong> Ca này đang có <strong>${slot.waitlistCount} ứng viên trong hàng chờ</strong>. Khi nâng sức chứa lên ${newCap}, ứng viên hàng chờ sẽ được <strong>tự động đôn lên chính thức</strong>.`;
-      } else {
-        noteEl.textContent = 'Bạn có chắc chắn muốn thay đổi số lượng ứng viên tối đa cho ca phỏng vấn này không?';
-      }
+      noteEl.textContent = 'Bạn có chắc chắn muốn thay đổi số lượng ứng viên tối đa cho ca phỏng vấn này không?';
     }
 
     modal.classList.remove('hidden');
@@ -2545,6 +2591,229 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       window.UI.showToast(err.message, 'error');
       closeCapacityConfirmModal(true);
+    }
+  });
+
+  function getTotalPermissionsCount() {
+    if (window.ALL_PERMISSION_KEYS && window.ALL_PERMISSION_KEYS.length) {
+      return window.ALL_PERMISSION_KEYS.length;
+    }
+    if (window.ALL_PERMISSIONS) {
+      return Object.keys(window.ALL_PERMISSIONS).length;
+    }
+    return 18;
+  }
+
+  // ==================== GRANULAR PERMISSIONS WORKSPACE CONTROLLER ====================
+  let currentPermSelectedAdminId = null;
+
+  function renderAdminPermissionsWorkspace() {
+    const adminListEl = document.getElementById('perm-admin-list');
+    const searchInput = document.getElementById('perm-search-admin');
+    const countBadge = document.getElementById('perm-admin-count');
+    const featuresContainer = document.getElementById('perm-features-container');
+
+    if (!adminListEl || !featuresContainer) return;
+
+    const allAdmins = store.getAdmins();
+    if (countBadge) countBadge.textContent = `${allAdmins.length} tài khoản`;
+
+    // Filter by search term
+    const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+    const filteredAdmins = allAdmins.filter(a => {
+      if (!searchTerm) return true;
+      return (a.fullName || '').toLowerCase().includes(searchTerm) ||
+             (a.username || '').toLowerCase().includes(searchTerm) ||
+             (a.role || '').toLowerCase().includes(searchTerm);
+    });
+
+    // Default selection
+    if (!currentPermSelectedAdminId || !allAdmins.some(a => a.id === currentPermSelectedAdminId)) {
+      const firstNonRoot = allAdmins.find(a => a.id !== 'adm-root-admin');
+      currentPermSelectedAdminId = firstNonRoot ? firstNonRoot.id : allAdmins[0]?.id;
+    }
+
+    const totalCount = getTotalPermissionsCount();
+
+    // Render left column (Admin accounts list)
+    adminListEl.innerHTML = '';
+    if (filteredAdmins.length === 0) {
+      adminListEl.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Không tìm thấy tài khoản phù hợp.</div>';
+    } else {
+      filteredAdmins.forEach(adm => {
+        const isSelected = (adm.id === currentPermSelectedAdminId);
+        const perms = store.getAdminPermissions(adm.id);
+        const isRoot = (adm.id === 'adm-root-admin' || adm.username === 'admin.mcc@gmail.com');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between border cursor-pointer ${
+          isSelected
+            ? 'bg-white border-[#8B1E22] ring-2 ring-[#8B1E22]/20 shadow-sm'
+            : 'bg-white/60 border-slate-200/80 hover:bg-white hover:border-slate-300'
+        }`;
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-8 h-8 rounded-xl ${isSelected ? 'bg-red-50 text-[#8B1E22]' : 'bg-slate-100 text-slate-700'} flex items-center justify-center text-sm font-bold shrink-0">
+              ${adm.avatar || '👤'}
+            </span>
+            <div class="min-w-0">
+              <div class="font-bold text-xs text-slate-900 truncate flex items-center gap-1.5">
+                <span>${adm.fullName}</span>
+                ${isRoot ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-mono font-bold">ROOT</span>' : ''}
+              </div>
+              <div class="text-[10px] text-slate-500 truncate font-mono">${adm.username}</div>
+            </div>
+          </div>
+          <span class="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ml-1 ${
+            perms.length === totalCount
+              ? 'bg-emerald-100 text-emerald-800'
+              : perms.length === 0
+              ? 'bg-slate-100 text-slate-500'
+              : 'bg-orange-100 text-orange-800'
+          }">
+            ${perms.length}/${totalCount}
+          </span>
+        `;
+
+        btn.onclick = () => {
+          currentPermSelectedAdminId = adm.id;
+          renderAdminPermissionsWorkspace();
+        };
+
+        adminListEl.appendChild(btn);
+      });
+    }
+
+    // Render right column for currentPermSelectedAdminId
+    const targetAdmin = allAdmins.find(a => a.id === currentPermSelectedAdminId);
+    if (!targetAdmin) return;
+
+    const isRoot = (targetAdmin.id === 'adm-root-admin' || targetAdmin.username === 'admin.mcc@gmail.com');
+
+    // Header info
+    const avatarEl = document.getElementById('perm-target-avatar');
+    const nameEl = document.getElementById('perm-target-name');
+    const roleEl = document.getElementById('perm-target-role');
+    const emailEl = document.getElementById('perm-target-email');
+    if (avatarEl) avatarEl.textContent = targetAdmin.avatar || '👤';
+    if (nameEl) nameEl.textContent = targetAdmin.fullName;
+    if (roleEl) roleEl.textContent = targetAdmin.role || (targetAdmin.deptId ? `Ban ${targetAdmin.deptId}` : 'Ban Chuyên Môn');
+    if (emailEl) emailEl.textContent = targetAdmin.username;
+
+    const currentPerms = store.getAdminPermissions(targetAdmin.id);
+
+    // Group ALL_PERMISSIONS by category
+    const categories = {};
+    const permsDict = window.ALL_PERMISSIONS || {};
+    Object.keys(permsDict).forEach(key => {
+      const p = permsDict[key];
+      if (!categories[p.category]) categories[p.category] = [];
+      categories[p.category].push(p);
+    });
+
+    featuresContainer.innerHTML = '';
+
+    Object.keys(categories).forEach(catName => {
+      const permsList = categories[catName];
+      const catBox = document.createElement('div');
+      catBox.className = 'border border-slate-200/90 rounded-2xl p-3.5 bg-slate-50/50 space-y-2.5';
+
+      catBox.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+          <span class="font-black text-xs text-slate-800">${catName}</span>
+          <span class="text-[10px] text-slate-400 font-bold">${permsList.length} tính năng</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          ${permsList.map(p => {
+            const isChecked = currentPerms.includes(p.key);
+            return `
+              <label class="flex items-start gap-3 p-2.5 rounded-xl bg-white border border-slate-200 hover:border-[#8B1E22] hover:bg-orange-50/40 transition-all cursor-pointer select-none shadow-2xs group">
+                <input type="checkbox" value="${p.key}" class="chk-feature-perm mt-0.5 rounded text-[#8B1E22] focus:ring-0 cursor-pointer w-4 h-4 shrink-0 accent-[#8B1E22]" ${isChecked ? 'checked' : ''}>
+                <div class="min-w-0 flex-1">
+                  <div class="text-xs font-bold text-slate-800 group-hover:text-[#8B1E22] leading-snug">
+                    ${p.name}
+                  </div>
+                  <div class="text-[10px] font-mono text-slate-400 mt-0.5">${p.key}</div>
+                </div>
+              </label>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      featuresContainer.appendChild(catBox);
+    });
+
+    // Update count indicator
+    function updateSelectedCount() {
+      const checkedBoxes = featuresContainer.querySelectorAll('.chk-feature-perm:checked');
+      const countEl = document.getElementById('perm-selected-count');
+      if (countEl) countEl.textContent = `${checkedBoxes.length} / ${totalCount}`;
+    }
+    updateSelectedCount();
+
+    featuresContainer.querySelectorAll('.chk-feature-perm').forEach(chk => {
+      chk.onchange = updateSelectedCount;
+    });
+
+    // Quick action buttons and Save button are always active
+    const quickActionsBox = document.getElementById('perm-quick-actions');
+    const saveBtn = document.getElementById('btn-save-admin-permissions');
+    if (quickActionsBox) quickActionsBox.classList.remove('hidden');
+    if (saveBtn) saveBtn.classList.remove('hidden');
+  }
+
+  // Event Listeners for Granular Permissions UI
+  document.getElementById('perm-search-admin')?.addEventListener('input', renderAdminPermissionsWorkspace);
+
+  document.getElementById('btn-perm-preset-all')?.addEventListener('click', () => {
+    document.querySelectorAll('.chk-feature-perm:not(:disabled)').forEach(chk => chk.checked = true);
+    const countEl = document.getElementById('perm-selected-count');
+    const tc = getTotalPermissionsCount();
+    if (countEl) countEl.textContent = `${tc} / ${tc}`;
+  });
+
+  document.getElementById('btn-perm-preset-none')?.addEventListener('click', () => {
+    document.querySelectorAll('.chk-feature-perm:not(:disabled)').forEach(chk => chk.checked = false);
+    const countEl = document.getElementById('perm-selected-count');
+    if (countEl) countEl.textContent = `0 / ${getTotalPermissionsCount()}`;
+  });
+
+  document.getElementById('btn-perm-preset-hr')?.addEventListener('click', () => {
+    const hrPerms = [
+      'slots:view_all', 'slots:create', 'slots:import_csv', 'slots:toggle_open', 'slots:set_deadline',
+      'candidates:view_all', 'candidates:override_slot', 'candidates:cancel_reg',
+      'checkin:view_all', 'checkin:mark_status',
+      'system:audit_log'
+    ];
+    document.querySelectorAll('.chk-feature-perm:not(:disabled)').forEach(chk => {
+      chk.checked = hrPerms.includes(chk.value);
+    });
+    const countEl = document.getElementById('perm-selected-count');
+    if (countEl) countEl.textContent = `${hrPerms.length} / ${getTotalPermissionsCount()}`;
+  });
+
+  document.getElementById('btn-perm-preset-dept')?.addEventListener('click', () => {
+    const deptPerms = ['checkin:mark_status'];
+    document.querySelectorAll('.chk-feature-perm:not(:disabled)').forEach(chk => {
+      chk.checked = deptPerms.includes(chk.value);
+    });
+    const countEl = document.getElementById('perm-selected-count');
+    if (countEl) countEl.textContent = `${deptPerms.length} / ${getTotalPermissionsCount()}`;
+  });
+
+  document.getElementById('btn-save-admin-permissions')?.addEventListener('click', () => {
+    if (!currentPermSelectedAdminId) return;
+    const checked = Array.from(document.querySelectorAll('.chk-feature-perm:checked')).map(c => c.value);
+    const targetAdmin = store.getAdmins().find(a => a.id === currentPermSelectedAdminId);
+    try {
+      store.updateAdminPermissions(currentPermSelectedAdminId, checked);
+      window.UI.showToast(`Đã lưu phân quyền (${checked.length} tính năng) cho [${targetAdmin?.fullName || currentPermSelectedAdminId}] thành công!`, 'success');
+      renderAdminPermissionsWorkspace();
+    } catch (err) {
+      window.UI.showToast(err.message || 'Lỗi khi lưu phân quyền', 'error');
     }
   });
 
@@ -2587,4 +2856,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial startup
   initCandidateWizard();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}

@@ -98,14 +98,9 @@ window.UI = {
     // Header
     col.innerHTML = `
       <div class="flex items-center justify-between pb-3 border-b border-stone-100">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-stone-100 text-stone-900 border border-stone-200 font-black flex items-center justify-center text-xs">
-            ${department.short.charAt(0)}
-          </div>
-          <div>
-            <h4 class="font-extrabold text-stone-900 text-sm">${department.name}</h4>
-            <p class="text-[11px] text-stone-500 font-medium">${slotsForDate.length} ca khả dụng</p>
-          </div>
+        <div>
+          <h4 class="font-extrabold text-stone-900 text-sm">${department.name}</h4>
+          <p class="text-[11px] text-stone-500 font-medium">${slotsForDate.length} ca khả dụng</p>
         </div>
       </div>
       <div class="slot-list-container space-y-3"></div>
@@ -138,17 +133,12 @@ window.UI = {
       }
 
       const card = document.createElement('div');
-      const isWaitlist = isFull && slot.isWaitlistAvailable;
 
       let cardStateClasses = '';
       if (isSelected) {
-        cardStateClasses = isWaitlist
-          ? 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/60 shadow-md'
-          : 'bg-orange-50/90 border-[#C23B22] ring-2 ring-[#C23B22]/60 shadow-md';
+        cardStateClasses = 'bg-orange-50/90 border-[#C23B22] ring-2 ring-[#C23B22]/60 shadow-md';
       } else if (isOverlapping) {
         cardStateClasses = 'bg-rose-50/40 border-rose-200 opacity-65 cursor-not-allowed';
-      } else if (isWaitlist) {
-        cardStateClasses = 'bg-amber-50/40 border-amber-200 hover:border-amber-400 hover:bg-amber-50/80 hover:shadow-md cursor-pointer';
       } else if (isFull) {
         cardStateClasses = 'bg-stone-100/70 border-stone-200 opacity-60 cursor-not-allowed';
       } else {
@@ -160,20 +150,20 @@ window.UI = {
       card.innerHTML = `
         <div class="flex items-center justify-between gap-2 mb-2">
           <div class="font-black text-stone-900 text-sm flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full ${isSelected ? (isWaitlist ? 'bg-amber-500' : 'bg-[#C23B22]') : isWaitlist ? 'bg-amber-400 animate-pulse' : isFull ? 'bg-stone-300' : isOverlapping ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
+            <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-[#C23B22]' : isFull ? 'bg-stone-300' : isOverlapping ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
             <span>${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)}</span>
           </div>
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${
-            isWaitlist ? 'bg-amber-100 text-amber-900 border border-amber-300' : isFull ? 'bg-stone-200 text-stone-600' : isSelected ? 'bg-[#C23B22] text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            isFull ? 'bg-stone-200 text-stone-600' : isSelected ? 'bg-[#C23B22] text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
           }">
-            ${isWaitlist ? '⏳ Hàng chờ (Waitlist)' : isFull ? 'Hết chỗ' : `Còn ${slot.remainingCount}/${slot.capacity} chỗ`}
+            ${isFull ? 'Hết chỗ' : `Còn ${slot.remainingCount}/${slot.capacity} chỗ`}
           </span>
         </div>
 
         <div class="text-xs text-stone-600 mb-2.5">
           <div class="flex items-center gap-1.5 text-[11px] font-medium text-stone-500">
             <span>📍</span>
-            <span class="truncate">${slot.type === 'online' ? 'Online: Google Meet' : slot.location}</span>
+            <span class="truncate">${slot.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy'}</span>
           </div>
         </div>
 
@@ -184,26 +174,26 @@ window.UI = {
           </div>
         ` : ''}
 
-        ${isWaitlist ? `
-          <div class="p-2 rounded-xl bg-amber-100/70 text-amber-900 text-[10.5px] font-medium flex items-center gap-1.5 mb-2">
-            <span>ℹ️</span>
-            <span>Ca đã đủ 2/2. Bạn có thể đăng ký vào <strong>Hàng chờ (Waitlist)</strong> để tự động đôn ca khi có người hủy.</span>
-          </div>
-        ` : ''}
-
         <div class="pt-2 border-t border-stone-100 flex items-center justify-between">
           <div class="text-[11px] font-medium text-stone-500">
             Sức chứa: <strong>${slot.capacity}</strong> ứng viên / ca
           </div>
-          ${(!isFull || isWaitlist) && !isOverlapping ? `
-            <button type="button" class="text-xs font-black ${isSelected ? (isWaitlist ? 'text-amber-800' : 'text-[#C23B22]') : isWaitlist ? 'text-amber-700 hover:underline' : 'text-stone-800 hover:text-[#C23B22]'}">
-              ${isSelected ? (isWaitlist ? '✓ Đã chọn Waitlist' : '✓ Đã chọn') : (isWaitlist ? 'Đăng ký chờ →' : 'Chọn ca →')}
+          ${!isFull && !isOverlapping ? `
+            <button type="button" class="text-xs font-black ${isSelected ? 'text-[#C23B22]' : 'text-stone-800 hover:text-[#C23B22]'}">
+              ${isSelected ? '✓ Đã chọn' : 'Chọn ca →'}
             </button>
           ` : ''}
         </div>
       `;
 
-      if ((!isFull || isWaitlist) && !isOverlapping) {
+      if (isOverlapping) {
+        card.onclick = () => {
+          card.classList.remove('animate-shake');
+          void card.offsetWidth; // Force reflow for re-animation
+          card.classList.add('animate-shake');
+          window.UI.showToast(`⚠️ ${overlapReason}`, 'warning');
+        };
+      } else if (!isFull) {
         card.onclick = () => onSelectSlot(slot);
       }
 
@@ -231,8 +221,11 @@ window.UI = {
       <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-100">
         <div>
           <span class="text-[10px] font-black uppercase tracking-wider text-[#C23B22]">${dept?.name || 'Ban Chuyên Môn'}</span>
-          <div class="flex items-center gap-2 mt-0.5">
-            <span class="font-mono font-black text-stone-900 text-base">${reg.bookingCode}</span>
+          <div class="flex flex-wrap items-center gap-2 mt-1">
+            <span class="font-mono font-black text-stone-900 text-base bg-stone-100 px-2 py-0.5 rounded-lg">${reg.bookingCode}</span>
+            <button type="button" class="btn-copy-code px-2.5 py-1 text-[11px] font-bold rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 transition-all flex items-center gap-1 cursor-pointer" data-code="${reg.bookingCode}">
+              <span>📋</span> <span>Sao chép</span>
+            </button>
             ${checkInBadge}
           </div>
         </div>
@@ -254,13 +247,13 @@ window.UI = {
         <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100">
           <div class="font-bold text-stone-400 uppercase text-[10px] mb-1 tracking-wider">THỜI GIAN & ĐỊA ĐIỂM</div>
           <div class="font-black text-stone-900 text-sm mb-1">${slot?.startTime} - ${slot?.endTime} (Ngày ${dd}/${mm}/${yy})</div>
-          <div class="text-stone-600 font-medium">${slot?.type === 'online' ? 'Online: ' + (slot?.meetUrl || 'Google Meet') : slot?.location}</div>
+          <div class="text-stone-600 font-medium">📍 ${slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy'}</div>
         </div>
 
         <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100">
           <div class="font-bold text-stone-400 uppercase text-[10px] mb-1 tracking-wider">HÌNH THỨC & LƯU Ý</div>
-          <div class="font-bold text-stone-900 text-xs mb-1">${slot?.type === 'online' ? 'Phỏng vấn Online (Google Meet)' : 'Phỏng vấn Trực tiếp'}</div>
-          <div class="text-stone-500 text-[11px]">Vui lòng có mặt trước 10 phút để điểm danh</div>
+          <div class="font-bold text-stone-900 text-xs mb-1">Phỏng vấn Trực tiếp (Offline)</div>
+          <div class="text-stone-500 text-[11px]">Vui lòng có mặt trước 10 phút tại phòng phỏng vấn để điểm danh</div>
         </div>
       </div>
     `;
@@ -268,6 +261,24 @@ window.UI = {
     if (!isAfterDeadline) {
       card.querySelector('.btn-reg-reschedule')?.addEventListener('click', () => onReschedule(reg));
       card.querySelector('.btn-reg-cancel')?.addEventListener('click', () => onCancel(reg));
+    }
+
+    const copyBtn = card.querySelector('.btn-copy-code');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(reg.bookingCode);
+          copyBtn.classList.add('copied');
+          copyBtn.innerHTML = '<span>✓</span> <span>Đã sao chép!</span>';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = '<span>📋</span> <span>Sao chép</span>';
+          }, 2000);
+        } catch (err) {
+          window.UI.showToast(`Mã đơn: ${reg.bookingCode}`, 'info');
+        }
+      });
     }
 
     return card;

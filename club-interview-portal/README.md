@@ -1,4 +1,4 @@
-﻿# 🌟 MCC.UEB - Cổng Đăng Ký & Quản Trị Ca Phỏng Vấn Tuyển Quân Gen XVI
+# 🌟 MCC.UEB - Cổng Đăng Ký & Quản Trị Ca Phỏng Vấn Tuyển Quân Gen XVI
 **CLB Truyền Thông MCC - Trường Đại học Kinh tế, ĐHQGHN (VNU-UEB)**
 
 Hệ thống web portal chuyên nghiệp phục vụ công tác tuyển quân: Đăng ký ca phỏng vấn trực tuyến cho ứng viên (xác thực OTP qua email, chống trùng lịch, chống spam hạn mức) và Hệ thống Quản trị & Điểm danh thực địa thời gian thực (Real-time Firebase Firestore & Firebase Authentication).
@@ -19,14 +19,12 @@ Toàn bộ tài khoản đã được bảo mật và xác thực trực tiếp 
   - `nguyenkieuanh.mcc@gmail.com` | Nguyễn Kiều Anh
   - `nguyennhatlinh.mcc@gmail.com` | Nguyễn Nhật Linh
   - `hoduongkhanhvy.mcc@gmail.com` | Hồ Dương Khánh Vy
-  - *(Tài khoản dùng chung: `banchunhiem.mcc@gmail.com`)*
 * **🎖️ Mentor (5 thành viên):**
   - `phambaonguyen.mcc@gmail.com` | Phạm Bảo Nguyên
   - `nguyenhuonglinh.mcc@gmail.com` | Nguyễn Hương Linh
   - `nguyenhoanganh.mcc@gmail.com` | Nguyễn Hoàng Anh
   - `nguyenphuonganh.mentor.mcc@gmail.com` | Nguyễn Phương Anh
   - `nguyenngocanh.mcc@gmail.com` | Nguyễn Ngọc Anh
-  - *(Tài khoản dùng chung: `mentor.mcc@gmail.com`)*
 * **📋 Ban Nhân Sự (13 thành viên):**
   - `nguyenkhanhlinh.mcc@gmail.com` | Nguyễn Khánh Linh
   - `nguyendangduong.mcc@gmail.com` | Nguyễn Đăng Dương
@@ -41,7 +39,6 @@ Toàn bộ tài khoản đã được bảo mật và xác thực trực tiếp 
   - `nguyenphuongnhi.mcc@gmail.com` | Nguyễn Phương Nhi
   - `luyenminhanh.mcc@gmail.com` | Luyện Minh Anh
   - `tranleducanh.mcc@gmail.com` | Trần Lê Đức Anh
-  - *(Tài khoản dùng chung: `bannhansu.mcc@gmail.com`)*
 
 ### 2. Nhóm 5 Ban Chuyên Môn (Xem lịch, xem ứng viên & Điểm danh ban mình):
 * 🎨 **Ban Truyền Thông:** `bantruyenthong.mcc@gmail.com`
@@ -52,11 +49,25 @@ Toàn bộ tài khoản đã được bảo mật và xác thực trực tiếp 
 
 ---
 
+## 🛡️ Hệ Thống Phân Quyền Tính Năng Động (Granular Feature Permissions)
+
+Hệ thống đã nâng cấp toàn diện sang mô hình **Phân quyền theo từng tính năng cụ thể (Feature-based Permissions)**:
+* **Không còn gán quyền cứng nhắc theo chức vụ**: Tài khoản Admin (`admin.mcc@gmail.com`) có thể tick chọn / bỏ tick 14 quyền hạn chi tiết cho từng tài khoản tại tab **"👥 Phân quyền tài khoản"**.
+* **Áp dụng tức thì theo thời gian thực**: Quyền hạn được đồng bộ hóa tức thời qua Google Firebase Firestore, khi thay đổi quyền của tài khoản nào thì tài khoản đó sẽ được cập nhật giao diện ngay lập tức.
+* **14 Quyền hạn nghiệp vụ chia theo 4 nhóm**:
+  1. **Quản lý Ca & Lịch**: Xem lịch 6 ban, Tạo ca mới, Import CSV, Đổi số lượng ứng viên (1-3), Khóa/Mở ca, Xóa ca, Cài đặt Deadline.
+  2. **Quản lý Ứng viên**: Xem ứng viên 6 ban, Can thiệp đổi ca, Hủy/Xóa đơn đăng ký.
+  3. **Điểm danh**: Xem điểm danh 6 ban, Thực hiện điểm danh.
+  4. **Quản trị hệ thống**: Tạo đợt tuyển mới, Xem nhật ký hoạt động (Audit log).
+* **Mẫu áp dụng nhanh (Presets)**: Hỗ trợ nút chọn nhanh: *⚡ Full quyền*, *❌ Bỏ chọn hết*, *📋 Mẫu Nhân Sự*, *🎨 Mẫu Chuyên Môn*.
+
+---
+
 ## 🛡️ Các Tính Năng Nghiệp Vụ & Kỹ Thuật Nổi Bật:
 
-1. **Sức Chứa Ca Linh Hoạt & Độc Quyền Phân Quyền:**
+1. **Sức Chứa Ca Linh Hoạt & Đổi Số Ứng Viên An Toàn:**
    - Mỗi ca phỏng vấn có thể tùy chỉnh từ **1, 2 đến tối đa 3 ứng viên**.
-   - **Chỉ Ban Chủ Nhiệm và Mentor** mới có quyền thay đổi sức chứa của ca (Ban Nhân Sự và 5 ban chuyên môn chỉ xem).
+   - **Chỉ tài khoản được cấp quyền `slots:edit_capacity`** mới có thể thay đổi sức chứa của ca.
    - Thao tác đổi số ứng viên có **Hộp thoại Modal xác nhận 2 bước** kèm cảnh báo tự động đôn hàng chờ hoặc chặn hạ sức chứa khi đã có thí sinh xác nhận.
 
 2. **Bắt Buộc Nhập Sức Chứa Khi Import CSV:**

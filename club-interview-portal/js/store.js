@@ -5,6 +5,30 @@
 
 const STORAGE_KEY = 'MCC_UEB_CLEAN_SLATE_V7';
 
+// --- ENTERPRISE SECURITY & INPUT SANITIZATION UTILITIES ---
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+window.escapeHtml = escapeHtml;
+
+const SECURITY_REGEX = {
+  // Vietnamese & Latin characters with standard accents, spaces only, 2 to 50 chars
+  FULL_NAME: /^[a-zA-ZàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ\s]{2,50}$/u,
+  // Standard UEB student ID: exactly 8 digits
+  STUDENT_ID: /^\d{8}$/,
+  // Standard RFC 5322 email
+  EMAIL: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  // Vietnamese mobile numbers: 10 digits starting with 03, 05, 07, 08, 09
+  PHONE: /^0(3|5|7|8|9)[0-9]{8}$/
+};
+window.SECURITY_REGEX = SECURITY_REGEX;
+
 // Generate 50 Slots across 6 departments
 const generate50Slots = () => {
   const dates = ['2026-09-05', '2026-09-06', '2026-09-07'];
@@ -44,7 +68,6 @@ const generate50Slots = () => {
     for (const shift of shifts) {
       for (const deptId of depts) {
         if (deptCounts[deptId] < targetPerDept[deptId]) {
-          const isOnline = shift.start === '18:30' || (idCount % 7 === 0);
           slots.push({
             id: `slot-${idCount++}`,
             campaignId: 'camp-gen16',
@@ -53,9 +76,8 @@ const generate50Slots = () => {
             startTime: shift.start,
             endTime: shift.end,
             capacity: 2,
-            type: isOnline ? 'online' : 'offline',
-            location: isOnline ? 'Google Meet Online' : 'Phòng 501 - Nhà E4, 144 Xuân Thủy',
-            meetUrl: isOnline ? 'https://meet.google.com/mcc-ueb-gen16' : '',
+            type: 'offline',
+            location: 'Phòng 501 - Nhà E4, 144 Xuân Thủy',
             isOpen: true,
             interviewerIds: ivMap[deptId] || ['iv-1', 'iv-2']
           });
@@ -67,111 +89,6 @@ const generate50Slots = () => {
   return slots;
 };
 
-// Generate 100 Candidates and 100 Registrations with Waitlists
-const generateMockCandidatesAndRegs = (slots) => {
-  const firstNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý', 'Đinh'];
-  const middleNames = ['Văn', 'Thị', 'Đức', 'Quốc', 'Minh', 'Thùy', 'Hải', 'Gia', 'Phương', 'Hoài', 'Anh', 'Ngọc', 'Thanh', 'Tuấn'];
-  const lastNames = ['An', 'Bảo', 'Châu', 'Dũng', 'Giang', 'Hà', 'Khánh', 'Linh', 'Mai', 'Nam', 'Phong', 'Quân', 'Sơn', 'Trang', 'Uyên', 'Vy', 'Yến', 'Khoa', 'Tú', 'Hiếu'];
-  const majors = ['QH-2024-E QTKD CLC 1', 'QH-2024-E TCNH CLC', 'QH-2024-E KTQT', 'QH-2024-E KTPT', 'QH-2024-E Marketing', 'QH-2024-E Kinh Tế Luật', 'QH-2024-E Kế Toán'];
-  
-  const depts = ['media', 'projects', 'tech', 'relations', 'events', 'hr'];
-  const candidates = [];
-  const registrations = [];
-  
-  const slotsByDept = {};
-  depts.forEach(d => { slotsByDept[d] = slots.filter(s => s.departmentId === d); });
-
-  const candCountByDept = {
-    media: 15,
-    projects: 17,
-    tech: 16,
-    relations: 17,
-    events: 17,
-    hr: 16
-  };
-
-  let candIdCounter = 1;
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-  depts.forEach((deptId, deptIdx) => {
-    const totalDeptCands = candCountByDept[deptId];
-    // Chừa riêng slot-1 của Ban Truyền Thông (Ca 1 08:00 - 10:00 ngày 05/09) trống 0/2 để test
-    const deptSlots = (deptId === 'media') ? slotsByDept[deptId].slice(1) : slotsByDept[deptId];
-    let slotIdx = 0;
-    const slotCapacityTrack = {};
-    deptSlots.forEach(s => { slotCapacityTrack[s.id] = 0; });
-
-    for (let i = 0; i < totalDeptCands; i++) {
-      const fn = firstNames[(deptIdx * 3 + i) % firstNames.length];
-      const mn = middleNames[(i * 2 + deptIdx) % middleNames.length];
-      const ln = lastNames[(i + deptIdx * 2) % lastNames.length];
-      const fullName = `${fn} ${mn} ${ln}`;
-      const msvNum = 24050000 + candIdCounter;
-      const studentId = String(msvNum);
-      const email = `${ln.toLowerCase()}.${studentId}@gmail.com`;
-      const phone = `09${Math.floor(10000000 + Math.random() * 89999999)}`;
-      const academicClass = majors[(i + deptIdx) % majors.length];
-
-      const candId = `cand-${candIdCounter}`;
-      const cand = {
-        id: candId,
-        campaignId: 'camp-gen15',
-        fullName,
-        studentId,
-        email,
-        phone,
-        academicClass,
-        createdAt: new Date(Date.now() - (100 - candIdCounter) * 3600000).toISOString()
-      };
-      candidates.push(cand);
-
-      let targetSlot = deptSlots[slotIdx % deptSlots.length];
-      let isWaitlist = false;
-
-      if (slotCapacityTrack[targetSlot.id] >= 2) {
-        if (slotCapacityTrack[targetSlot.id] === 2 && (i === totalDeptCands - 1 || i === totalDeptCands - 2)) {
-          isWaitlist = true;
-          slotCapacityTrack[targetSlot.id]++;
-        } else {
-          slotIdx++;
-          targetSlot = deptSlots[slotIdx % deptSlots.length];
-          slotCapacityTrack[targetSlot.id] = (slotCapacityTrack[targetSlot.id] || 0) + 1;
-        }
-      } else {
-        slotCapacityTrack[targetSlot.id]++;
-      }
-
-      let code = 'MCC-';
-      for (let c = 0; c < 6; c++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-
-      let checkInStatus = 'pending';
-      if (!isWaitlist) {
-        if (candIdCounter % 6 === 0) checkInStatus = 'checked-in';
-        else if (candIdCounter % 15 === 0) checkInStatus = 'absent';
-        else checkInStatus = 'pending';
-      }
-
-      const reg = {
-        id: `reg-${candIdCounter}`,
-        campaignId: 'camp-gen15',
-        candidateId: candId,
-        departmentId: deptId,
-        slotId: targetSlot.id,
-        bookingCode: code,
-        status: isWaitlist ? 'waitlist' : 'confirmed',
-        checkInStatus: isWaitlist ? 'pending' : checkInStatus,
-        createdAt: cand.createdAt,
-        evaluation: null
-      };
-      registrations.push(reg);
-
-      candIdCounter++;
-    }
-  });
-
-  return { candidates, registrations };
-};
-
 const INITIAL_SLOTS = generate50Slots();
 const INITIAL_CANDIDATES = [];
 const INITIAL_REGISTRATIONS = [];
@@ -180,22 +97,22 @@ const INITIAL_REGISTRATIONS = [];
 const INITIAL_AUDIT_LOGS = [
   {
     id: 'audit-init-1',
-    campaignId: 'camp-gen15',
-    adminName: 'Nguyễn Việt Hoàng',
+    campaignId: 'camp-gen16',
+    adminName: 'Ban Quản Trị MCC',
     action: 'CREATE_CAMPAIGN',
     entityType: 'Campaign',
-    entityId: 'camp-gen15',
-    reason: 'Khởi tạo đợt tuyển Gen XV',
+    entityId: 'camp-gen16',
+    reason: 'Khởi tạo đợt tuyển Gen XVI - FRAMEJUMP',
     timestamp: new Date(Date.now() - 86400000 * 2).toISOString()
   },
   {
     id: 'audit-init-2',
-    campaignId: 'camp-gen15',
-    adminName: 'Nguyễn Việt Hoàng',
+    campaignId: 'camp-gen16',
+    adminName: 'Ban Quản Trị MCC',
     action: 'BULK_OPEN_SLOTS',
     entityType: 'Slot',
     entityId: '50-slots',
-    reason: 'Mở công khai 50 ca phỏng vấn cho 6 ban',
+    reason: 'Mở công khai các ca phỏng vấn cho 6 ban',
     timestamp: new Date(Date.now() - 86400000).toISOString()
   }
 ];
@@ -366,7 +283,7 @@ const DEPARTMENTS = [
 
 // Interviewers Pool (Hội Đồng Phỏng Vấn)
 const INITIAL_INTERVIEWERS = [
-  { id: 'iv-1', fullName: 'Nguyễn Việt Hoàng', role: 'Chủ Nhiệm MCC', email: 'banchunhiem.mcc@gmail.com', phone: '0912345001', deptId: 'media' },
+  { id: 'iv-1', fullName: 'Nguyễn Kiều Anh', role: 'Ban Chủ Nhiệm MCC', email: 'nguyenkieuanh.mcc@gmail.com', phone: '0912345001', deptId: 'media' },
   { id: 'iv-2', fullName: 'Trần Thảo Linh', role: 'Trưởng Ban Truyền Thông', email: 'bantruyenthong.mcc@gmail.com', phone: '0912345002', deptId: 'media' },
   { id: 'iv-3', fullName: 'Đặng Quang Minh', role: 'Trưởng Ban Kỹ Thuật', email: 'bankythuat.mcc@gmail.com', phone: '0912345003', deptId: 'tech' },
   { id: 'iv-4', fullName: 'Phạm Hải Nam', role: 'Phó Ban Kỹ Thuật', email: 'bankythuat.mcc@gmail.com', phone: '0912345004', deptId: 'tech' },
@@ -374,8 +291,8 @@ const INITIAL_INTERVIEWERS = [
   { id: 'iv-6', fullName: 'Lê Thu Trang', role: 'Phó Ban Sự Kiện', email: 'bansukien.mcc@gmail.com', phone: '0912345006', deptId: 'events' },
   { id: 'iv-7', fullName: 'Hoàng Phương Mai', role: 'Trưởng Ban Đối Ngoại', email: 'bandoingoai.mcc@gmail.com', phone: '0912345007', deptId: 'relations' },
   { id: 'iv-8', fullName: 'Nguyễn Đức Anh', role: 'Phó Ban Đối Ngoại', email: 'bandoingoai.mcc@gmail.com', phone: '0912345008', deptId: 'relations' },
-  { id: 'iv-9', fullName: 'Bùi Minh Đức', role: 'Trưởng Ban Nhân Sự', email: 'bannhansu.mcc@gmail.com', phone: '0912345009', deptId: 'hr' },
-  { id: 'iv-10', fullName: 'Đỗ Thùy Dương', role: 'Phó Ban Nhân Sự', email: 'bannhansu.mcc@gmail.com', phone: '0912345010', deptId: 'hr' },
+  { id: 'iv-9', fullName: 'Nguyễn Khánh Linh', role: 'Ban Nhân Sự', email: 'nguyenkhanhlinh.mcc@gmail.com', phone: '0912345009', deptId: 'hr' },
+  { id: 'iv-10', fullName: 'Nguyễn Đăng Dương', role: 'Ban Nhân Sự', email: 'nguyendangduong.mcc@gmail.com', phone: '0912345010', deptId: 'hr' },
   { id: 'iv-11', fullName: 'Trịnh Hoài Nam', role: 'Trưởng Ban Dự Án', email: 'banduan.mcc@gmail.com', phone: '0912345011', deptId: 'projects' },
   { id: 'iv-12', fullName: 'Nguyễn Lan Anh', role: 'Phó Ban Dự Án', email: 'banduan.mcc@gmail.com', phone: '0912345012', deptId: 'projects' }
 ];
@@ -402,7 +319,6 @@ const INITIAL_CAMPAIGNS = [
     academicYear: '2026 - 2027',
     slogan: 'JUMP THE FRAME - OWN THE SCENE',
     locationOffline: 'Phòng 501 - Nhà E4, Trường ĐH Kinh tế - ĐHQGHN (144 Xuân Thủy, Cầu Giấy, HN)',
-    onlineMeetLink: 'https://meet.google.com/mcc-ueb-gen16',
     contactEmail: 'mcc.ueb.vnu@gmail.com',
     contactHotline: '0987.654.321 (Ban Tuyển Quân MCC)',
     fanpageUrl: 'https://www.facebook.com/MCC.UEB',
@@ -411,40 +327,6 @@ const INITIAL_CAMPAIGNS = [
     registrationDeadline: getFutureDate(4, 0), // 4 days from now
     isActive: true,
     createdAt: new Date().toISOString()
-  },
-  {
-    id: 'camp-gen15',
-    name: 'Tuyển Quân Gen XV - Ignite The Next Chapter',
-    gen: 'Gen XV',
-    academicYear: '2025 - 2026',
-    slogan: 'Trẻ - Nhiệt Huyết - Chuyên Nghiệp | Nói được - Làm được - Chơi được',
-    locationOffline: 'Phòng 501 - Nhà E4',
-    onlineMeetLink: 'https://meet.google.com/mcc-ueb-gen15',
-    contactEmail: 'mcc.ueb.vnu@gmail.com',
-    contactHotline: '0987.654.321',
-    fanpageUrl: 'https://www.facebook.com/MCC.UEB',
-    startDate: getDateStr(-365),
-    endDate: getDateStr(-358),
-    registrationDeadline: getDateStr(-360),
-    isActive: false,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'camp-gen14',
-    name: 'Tuyển Quân Gen XIV - The First Spark',
-    gen: 'Gen XIV',
-    academicYear: '2024 - 2025',
-    slogan: 'Dẫn đầu xu hướng, bứt phá giới hạn',
-    locationOffline: 'Phòng 501 - Nhà E4',
-    onlineMeetLink: 'https://meet.google.com/mcc-ueb-gen14',
-    contactEmail: 'mcc.ueb.vnu@gmail.com',
-    contactHotline: '0987.654.321',
-    fanpageUrl: 'https://www.facebook.com/MCC.UEB',
-    startDate: '2024-10-01',
-    endDate: '2024-10-15',
-    registrationDeadline: '2024-10-10T23:59:59Z',
-    isActive: false,
-    createdAt: '2024-09-20T00:00:00Z'
   }
 ];
 
@@ -474,10 +356,10 @@ try {
 
 class Store {
   constructor() {
-    this.data = this.loadData();
     this.listeners = [];
     this.otpStore = {}; // Temporary in-memory OTP cache { email: { code, expiresAt } }
     this.isSyncingFromCloud = false;
+    this.data = this.loadData();
     this.initCloudSync();
   }
 
@@ -497,6 +379,24 @@ class Store {
                 cloudData.registrations.some(r => r.candidateId === c.id && r.status !== 'cancelled')
               );
             }
+
+            // Loại bỏ hoàn toàn Gen XV và Gen XIV, cố định Gen XVI
+            if (Array.isArray(cloudData.campaigns)) {
+              cloudData.campaigns = cloudData.campaigns.filter(c => c.id !== 'camp-gen15' && c.id !== 'camp-gen14');
+              const hasActive = cloudData.campaigns.some(c => c.isActive);
+              if (!hasActive && cloudData.campaigns.length > 0) {
+                cloudData.campaigns[0].isActive = true;
+              }
+            }
+
+            // Loại bỏ hoàn toàn tài khoản dùng chung (banchunhiem, mentor, bannhansu) nếu có lưu trên Cloud
+            if (Array.isArray(cloudData.admins)) {
+              cloudData.admins = cloudData.admins.filter(a => 
+                !['adm-bcn-shared', 'adm-mentor-shared', 'adm-hr-shared'].includes(a.id) &&
+                !['banchunhiem.mcc@gmail.com', 'mentor.mcc@gmail.com', 'bannhansu.mcc@gmail.com'].includes(a.username)
+              );
+            }
+
             this.isSyncingFromCloud = true;
             this.data = cloudData;
             try {
@@ -527,6 +427,7 @@ class Store {
   }
 
   notify() {
+    if (!Array.isArray(this.listeners)) return;
     this.listeners.forEach(fn => {
       try { fn(this.data); } catch (e) { console.error('Listener error', e); }
     });
@@ -547,6 +448,12 @@ class Store {
               s.id = `slot-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`;
             }
             seenIds.add(s.id);
+            // 100% Offline chỉ phỏng vấn trực tiếp tại trường
+            s.type = 'offline';
+            if (!s.location || s.location.includes('Google Meet') || s.location.toLowerCase().includes('online')) {
+              s.location = 'Phòng 501 - Nhà E4, 144 Xuân Thủy';
+            }
+            delete s.meetUrl;
           });
         }
         if (hasDuplicates) {
@@ -560,8 +467,29 @@ class Store {
           );
         }
 
-        // Tự động khởi tạo systemSettings nếu chưa có
-        parsed.systemSettings = parsed.systemSettings || { isWaitlistEnabled: true };
+        // Tự động dọn dẹp các đơn waitlist cũ nếu có
+        if (Array.isArray(parsed.registrations)) {
+          parsed.registrations = parsed.registrations.filter(r => r.status !== 'waitlist');
+        }
+
+        parsed.systemSettings = { isWaitlistEnabled: false };
+
+        // Loại bỏ hoàn toàn Gen XV và Gen XIV khỏi bộ nhớ lưu trữ, cố định Gen XVI
+        if (Array.isArray(parsed.campaigns)) {
+          parsed.campaigns = parsed.campaigns.filter(c => c.id !== 'camp-gen15' && c.id !== 'camp-gen14');
+          const hasActive = parsed.campaigns.some(c => c.isActive);
+          if (!hasActive && parsed.campaigns.length > 0) {
+            parsed.campaigns[0].isActive = true;
+          }
+        }
+
+        // Loại bỏ hoàn toàn tài khoản dùng chung (banchunhiem, mentor, bannhansu) khỏi bộ nhớ lưu trữ
+        if (Array.isArray(parsed.admins)) {
+          parsed.admins = parsed.admins.filter(a => 
+            !['adm-bcn-shared', 'adm-mentor-shared', 'adm-hr-shared'].includes(a.id) &&
+            !['banchunhiem.mcc@gmail.com', 'mentor.mcc@gmail.com', 'bannhansu.mcc@gmail.com'].includes(a.username)
+          );
+        }
 
         return parsed;
       }
@@ -577,7 +505,7 @@ class Store {
       candidates: INITIAL_CANDIDATES,
       registrations: INITIAL_REGISTRATIONS,
       auditLogs: INITIAL_AUDIT_LOGS,
-      systemSettings: { isWaitlistEnabled: true }
+      systemSettings: { isWaitlistEnabled: false }
     };
     this.saveData(defaultData);
     return defaultData;
@@ -631,11 +559,12 @@ class Store {
 
   // --- CAMPAIGN MANAGEMENT ---
   getActiveCampaign() {
-    return this.data.campaigns.find(c => c.isActive) || this.data.campaigns[0];
+    const valid = (this.data.campaigns || []).filter(c => c.id !== 'camp-gen15' && c.id !== 'camp-gen14');
+    return valid.find(c => c.isActive) || valid[0] || INITIAL_CAMPAIGNS[0];
   }
 
   getCampaigns() {
-    return this.data.campaigns;
+    return (this.data.campaigns || []).filter(c => c.id !== 'camp-gen15' && c.id !== 'camp-gen14');
   }
 
   setActiveCampaign(campaignId) {
@@ -656,7 +585,6 @@ class Store {
       academicYear: campaignData.academicYear || '2025 - 2026',
       slogan: campaignData.slogan || 'Trẻ - Nhiệt Huyết - Chuyên Nghiệp',
       locationOffline: campaignData.locationOffline || 'Phòng 501 - Nhà E4, 144 Xuân Thủy',
-      onlineMeetLink: campaignData.onlineMeetLink || 'https://meet.google.com/mcc-ueb',
       contactEmail: campaignData.contactEmail || 'mcc.ueb.vnu@gmail.com',
       contactHotline: campaignData.contactHotline || '0987.654.321',
       fanpageUrl: 'https://www.facebook.com/MCC.UEB',
@@ -711,38 +639,25 @@ class Store {
 
   // --- SYSTEM SETTINGS & WAITLIST FEATURE TOGGLE ---
   isWaitlistEnabled() {
-    if (!this.data || !this.data.systemSettings) return true;
-    return this.data.systemSettings.isWaitlistEnabled !== false;
+    return false;
   }
 
   setWaitlistEnabled(enabled) {
-    if (!this.data) this.data = {};
-    if (!this.data.systemSettings) this.data.systemSettings = {};
-    const flag = Boolean(enabled);
-    this.data.systemSettings.isWaitlistEnabled = flag;
-    const current = this.getCurrentAdmin();
-    this.logAudit(current?.fullName || 'admin', 'TOGGLE_WAITLIST', 'System', 'waitlist', null, { isWaitlistEnabled: flag }, `Đã ${flag ? 'BẬT' : 'TẮT'} chức năng Waitlist trên toàn bộ hệ thống`);
-    this.saveData();
-    this.notify();
-    return flag;
+    return false;
   }
 
   // --- SLOTS MANAGEMENT ---
   getSlots(campaignId = null, deptId = null) {
     const campId = campaignId || this.getActiveCampaign()?.id;
-    const waitlistAllowed = this.isWaitlistEnabled();
     return this.data.slots
       .filter(s => (!campId || s.campaignId === campId) && (!deptId || deptId === 'all' || s.departmentId === deptId))
       .map(slot => {
         const dept = this.getDepartmentById(slot.departmentId);
         const interviewers = (slot.interviewerIds || []).map(id => this.getInterviewerById(id)).filter(Boolean);
         const activeRegs = this.data.registrations.filter(r => r.slotId === slot.id && r.status === 'confirmed');
-        const waitlistRegs = this.data.registrations.filter(r => r.slotId === slot.id && r.status === 'waitlist');
         const bookedCount = activeRegs.length;
-        const waitlistCount = waitlistRegs.length;
         const remainingCount = Math.max(0, slot.capacity - bookedCount);
         const isFull = remainingCount === 0;
-        const isWaitlistAvailable = waitlistAllowed && isFull && waitlistCount < 1; // 1 waitlist spot allowed if enabled
         const isEligible = (slot.interviewerIds && slot.interviewerIds.length >= 2);
 
         return {
@@ -750,14 +665,14 @@ class Store {
           dept,
           interviewers,
           bookedCount,
-          waitlistCount,
-          isWaitlistAvailable,
+          waitlistCount: 0,
+          isWaitlistAvailable: false,
           remainingCount,
           isFull,
           isEligible,
           shiftLabel: this.getShiftLabel(slot.startTime, slot.endTime),
           registrations: activeRegs,
-          waitlistRegistrations: waitlistRegs
+          waitlistRegistrations: []
         };
       });
   }
@@ -786,8 +701,8 @@ class Store {
       if (!slot.interviewerIds || slot.interviewerIds.length < 2) {
         throw new Error('Ca phỏng vấn cần ít nhất 2 phỏng vấn viên để có thể mở ca.');
       }
-      if (![2, 3].includes(slot.capacity)) {
-        throw new Error('Capacity của ca chỉ được là 2 hoặc 3 ứng viên.');
+      if (![1, 2, 3].includes(slot.capacity)) {
+        throw new Error('Capacity của ca phải từ 1 đến 3 ứng viên.');
       }
     }
 
@@ -844,9 +759,8 @@ class Store {
       date: slotData.date,
       startTime: slotData.startTime,
       endTime: slotData.endTime,
-      location: slotData.location || 'Phòng 501 - Nhà E4 (UEB)',
-      meetUrl: slotData.meetUrl || '',
-      type: slotData.type || 'offline',
+      location: slotData.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy',
+      type: 'offline',
       capacity: capacity,
       bookedCount: 0,
       isOpen: Boolean(slotData.isOpen && interviewerIds.length >= 2),
@@ -861,10 +775,10 @@ class Store {
 
   updateSlotCapacity(slotId, newCapacity) {
     const currentAdmin = this.getCurrentAdmin();
-    // Phân quyền chặt chẽ: Chỉ Ban Chủ Nhiệm và Mentor mới được đổi số lượng ứng viên trong ca!
-    const isAuthorized = currentAdmin && (currentAdmin.role === 'Ban Chủ Nhiệm' || currentAdmin.role === 'Mentor');
+    // Phân quyền Granular: Kiểm tra quyền slots:edit_capacity
+    const isAuthorized = this.hasPermission('slots:edit_capacity', currentAdmin);
     if (!isAuthorized) {
-      throw new Error('Chỉ Ban Chủ Nhiệm và Mentor mới có quyền thay đổi số lượng ứng viên trong ca.');
+      throw new Error('Bạn không có quyền thay đổi số lượng ứng viên trong ca phỏng vấn.');
     }
 
     const slot = this.data.slots.find(s => s.id === slotId);
@@ -882,15 +796,6 @@ class Store {
 
     const oldCap = slot.capacity || 2;
     slot.capacity = cap;
-
-    // Nếu nâng sức chứa và ca đang có hàng chờ (waitlist), tự động đôn bạn ở hàng chờ lên!
-    if (cap > oldCap) {
-      const waitlistReg = this.data.registrations.find(r => r.slotId === slotId && r.status === 'waitlist');
-      if (waitlistReg) {
-        waitlistReg.status = 'confirmed';
-        this.logAudit(currentAdmin.fullName, 'PROMOTE_WAITLIST', 'Registration', waitlistReg.id, null, waitlistReg, `Tự động đôn ứng viên chờ lên chính thức khi nâng sức chứa ca lên ${cap}`);
-      }
-    }
 
     this.saveData();
     this.logAudit(currentAdmin.fullName, 'UPDATE_SLOT_CAPACITY', 'Slot', slotId, { capacity: oldCap }, { capacity: cap }, `Đổi sức chứa ca từ ${oldCap} thành ${cap} ứng viên`);
@@ -1003,13 +908,67 @@ class Store {
     }
   }
 
+  // --- INPUT VALIDATION & SANITIZATION (ZERO TRUST DEFENSE) ---
+  validateCandidateInput(personalInfo) {
+    if (!personalInfo || typeof personalInfo !== 'object') {
+      throw new Error('Thông tin đăng ký không hợp lệ.');
+    }
+
+    const fullName = (personalInfo.fullName || '').trim();
+    const studentId = (personalInfo.studentId || '').trim();
+    const email = (personalInfo.email || '').trim().toLowerCase();
+    const phone = (personalInfo.phone || '').trim();
+    const academicClass = (personalInfo.academicClass || '').trim();
+
+    // 1. Họ và tên: 2 - 50 ký tự, chỉ chữ cái tiếng Việt/Latin và khoảng trắng
+    if (!fullName) throw new Error('Vui lòng điền họ và tên.');
+    if (fullName.length < 2 || fullName.length > 50) {
+      throw new Error('Họ và tên phải từ 2 đến 50 ký tự.');
+    }
+    if (!SECURITY_REGEX.FULL_NAME.test(fullName)) {
+      throw new Error('Họ và tên chỉ được chứa chữ cái và khoảng trắng, không chứa số, thẻ HTML hay ký tự đặc biệt.');
+    }
+
+    // 2. Mã sinh viên (MSV): Đúng 8 chữ số chuẩn UEB
+    if (!studentId) throw new Error('Vui lòng điền mã sinh viên (MSV).');
+    if (!SECURITY_REGEX.STUDENT_ID.test(studentId)) {
+      throw new Error('Mã sinh viên (MSV) phải gồm đúng 8 chữ số (Ví dụ: 24050001).');
+    }
+
+    // 3. Email cá nhân: Định dạng chuẩn RFC, tối đa 80 ký tự
+    if (!email) throw new Error('Vui lòng điền địa chỉ email.');
+    if (email.length > 80 || !SECURITY_REGEX.EMAIL.test(email)) {
+      throw new Error('Địa chỉ email không đúng định dạng chuẩn (Ví dụ: name@gmail.com).');
+    }
+
+    // 4. Số điện thoại (Zalo): 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09
+    if (!phone) throw new Error('Vui lòng điền số điện thoại.');
+    if (!SECURITY_REGEX.PHONE.test(phone)) {
+      throw new Error('Số điện thoại không hợp lệ (Bắt buộc gồm 10 chữ số, ví dụ 0912345678).');
+    }
+
+    // 5. Lớp / Khóa (Tùy chọn): Tối đa 30 ký tự, lọc bỏ thẻ HTML
+    if (academicClass && academicClass.length > 30) {
+      throw new Error('Tên lớp / khóa không được vượt quá 30 ký tự.');
+    }
+
+    return {
+      fullName,
+      studentId,
+      email,
+      phone,
+      academicClass: academicClass.replace(/[<>]/g, '').trim()
+    };
+  }
+
   // --- CANDIDATE & REGISTRATION (ATOMIC BOOKING & OVERLAP PREVENTION) ---
   /**
    * Registers a candidate with 1 or 2 chosen department slots.
    * Enforces:
-   * 1. Unique Student ID & Email in campaign.
-   * 2. Overlap check between Dept 1 slot and Dept 2 slot.
-   * 3. Atomic capacity check on both slots (Anti-Overbooking).
+   * 1. Strict Input Whitelisting (Anti-Injection / Anti-XSS).
+   * 2. Unique Student ID & Email in campaign.
+   * 3. Overlap check between Dept 1 slot and Dept 2 slot.
+   * 4. Atomic capacity check on both slots (Anti-Overbooking).
    */
   registerCandidate({ personalInfo, dept1SlotId, dept2SlotId }) {
     const camp = this.getActiveCampaign();
@@ -1017,8 +976,10 @@ class Store {
       throw new Error('Đợt tuyển quân đã hết hạn nhận đăng ký phỏng vấn.');
     }
 
-    const studentId = personalInfo.studentId.trim().toLowerCase();
-    const email = personalInfo.email.trim().toLowerCase();
+    // Validation 2 tầng: Làm sạch và chuẩn hóa dữ liệu
+    const cleanInfo = this.validateCandidateInput(personalInfo);
+    const studentId = cleanInfo.studentId.toLowerCase();
+    const email = cleanInfo.email.toLowerCase();
 
     // Kiểm tra xem MSV hoặc Email này đã có đơn đăng ký ĐANG HOẠT ĐỘNG trong mùa này chưa
     const existingActiveReg = this.data.registrations.find(r => {
@@ -1049,23 +1010,20 @@ class Store {
 
     const slot1 = this.getSlotById(dept1SlotId);
     if (!slot1 || !slot1.isOpen) throw new Error('Ca phỏng vấn Ban 1 không hợp lệ hoặc chưa mở.');
-    if (slot1.isFull && !slot1.isWaitlistAvailable) {
-      throw new Error(`Ca phỏng vấn ${slot1.dept.name} (${slot1.startTime} - ${slot1.endTime}) đã kín cả 2 chỗ và hàng chờ. Vui lòng chọn ca khác.`);
+    if (slot1.isFull) {
+      throw new Error(`Ca phỏng vấn ${slot1.dept.name} (${slot1.startTime} - ${slot1.endTime}) đã hết chỗ. Vui lòng chọn ca khác.`);
     }
-    const isSlot1Waitlist = slot1.isFull && slot1.isWaitlistAvailable;
 
     let slot2 = null;
-    let isSlot2Waitlist = false;
     if (dept2SlotId) {
       if (dept2SlotId === dept1SlotId) {
         throw new Error('Hai ban không thể chọn cùng một ca phỏng vấn.');
       }
       slot2 = this.getSlotById(dept2SlotId);
       if (!slot2 || !slot2.isOpen) throw new Error('Ca phỏng vấn Ban 2 không hợp lệ hoặc chưa mở.');
-      if (slot2.isFull && !slot2.isWaitlistAvailable) {
-        throw new Error(`Ca phỏng vấn ${slot2.dept.name} (${slot2.startTime} - ${slot2.endTime}) đã kín cả 2 chỗ và hàng chờ. Vui lòng chọn ca khác.`);
+      if (slot2.isFull) {
+        throw new Error(`Ca phỏng vấn ${slot2.dept.name} (${slot2.startTime} - ${slot2.endTime}) đã hết chỗ. Vui lòng chọn ca khác.`);
       }
-      isSlot2Waitlist = slot2.isFull && slot2.isWaitlistAvailable;
 
       // OVERLAP CHECK
       if (slot1.date === slot2.date && this.checkTimeOverlap(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime)) {
@@ -1078,14 +1036,11 @@ class Store {
     const newCandidate = {
       id: candId,
       campaignId: camp.id,
-      fullName: personalInfo.fullName.trim(),
-      studentId: personalInfo.studentId.trim(),
-      email: personalInfo.email.trim(),
-      phone: personalInfo.phone.trim(),
-      academicClass: personalInfo.academicClass ? personalInfo.academicClass.trim() : '',
-      cvUrl: personalInfo.cvUrl ? personalInfo.cvUrl.trim() : '',
-      portfolioUrl: personalInfo.portfolioUrl ? personalInfo.portfolioUrl.trim() : '',
-      bio: personalInfo.bio ? personalInfo.bio.trim() : '',
+      fullName: cleanInfo.fullName,
+      studentId: cleanInfo.studentId,
+      email: cleanInfo.email,
+      phone: cleanInfo.phone,
+      academicClass: cleanInfo.academicClass,
       createdAt: new Date().toISOString()
     };
 
@@ -1101,7 +1056,7 @@ class Store {
       slotId: slot1.id,
       bookingCode: `MCC-${randomHex}-${slot1.dept.short.replace(/\s+/g, '').toUpperCase().slice(0, 2)}`,
       checkInStatus: 'pending',
-      status: isSlot1Waitlist ? 'waitlist' : 'confirmed',
+      status: 'confirmed',
       registeredAt: new Date().toISOString(),
       evaluation: null
     };
@@ -1116,7 +1071,7 @@ class Store {
         slotId: slot2.id,
         bookingCode: `MCC-${randomHex}-${slot2.dept.short.replace(/\s+/g, '').toUpperCase().slice(0, 2)}`,
         checkInStatus: 'pending',
-        status: isSlot2Waitlist ? 'waitlist' : 'confirmed',
+        status: 'confirmed',
         registeredAt: new Date().toISOString(),
         evaluation: null
       };
@@ -1128,42 +1083,21 @@ class Store {
     this.data.registrations.unshift(...createdRegistrations);
     this.saveData();
 
-    const hasWaitlist = isSlot1Waitlist || isSlot2Waitlist;
-    this.logAudit(newCandidate.fullName, hasWaitlist ? 'REGISTER_WAITLIST' : 'REGISTER_SUCCESS', 'Candidate', candId, null, { candidate: newCandidate, registrations: createdRegistrations }, hasWaitlist ? 'Đăng ký vào Danh Sách Chờ (Waitlist)' : 'Đăng ký ca phỏng vấn thành công');
+    this.logAudit(newCandidate.fullName, 'REGISTER_SUCCESS', 'Candidate', candId, null, { candidate: newCandidate, registrations: createdRegistrations }, 'Đăng ký ca phỏng vấn thành công');
 
     return {
       candidate: newCandidate,
       registrations: createdRegistrations,
-      hasWaitlist
+      hasWaitlist: false
     };
   }
 
   autoPromoteWaitlist(slotId) {
-    const slot = this.getSlotById(slotId);
-    if (!slot) return null;
-    if (slot.bookedCount < slot.capacity) {
-      const waitlistReg = this.data.registrations.find(r => r.slotId === slotId && r.status === 'waitlist');
-      if (waitlistReg) {
-        waitlistReg.status = 'confirmed';
-        waitlistReg.promotedAt = new Date().toISOString();
-        const cand = this.getCandidateById(waitlistReg.candidateId);
-        this.logAudit('System', 'AUTO_PROMOTE_WAITLIST', 'Registration', waitlistReg.id, null, waitlistReg, `Tự động đôn ứng viên [${cand?.fullName || ''}] từ Waitlist lên Ca chính thức`);
-        this.saveData();
-        return { promoted: true, candidate: cand, registration: waitlistReg };
-      }
-    }
     return null;
   }
 
-  promoteWaitlistToConfirmed(registrationId, reason = 'Admin duyệt trực tiếp từ Waitlist vào ca chính thức') {
-    const reg = this.data.registrations.find(r => r.id === registrationId);
-    if (!reg) throw new Error('Không tìm thấy bản ghi đăng ký.');
-    reg.status = 'confirmed';
-    reg.promotedAt = new Date().toISOString();
-    const cand = this.getCandidateById(reg.candidateId);
-    this.logAudit('Admin', 'MANUAL_PROMOTE_WAITLIST', 'Registration', registrationId, { status: 'waitlist' }, { status: 'confirmed' }, reason);
-    this.saveData();
-    return reg;
+  promoteWaitlistToConfirmed(registrationId, reason = '') {
+    return null;
   }
 
   getCandidateById(candidateId) {
@@ -1321,9 +1255,6 @@ class Store {
 
     this.saveData();
 
-    // Auto promote any waitlist candidate in the freed slot
-    this.autoPromoteWaitlist(oldSlotId);
-
     return reg;
   }
 
@@ -1354,11 +1285,6 @@ class Store {
     }
 
     this.saveData();
-
-    // Auto promote any waitlist candidate in the freed slot
-    if (oldSlotId) {
-      this.autoPromoteWaitlist(oldSlotId);
-    }
 
     return reg;
   }
@@ -1406,10 +1332,10 @@ class Store {
     const totalBooked = registrations.length;
     const fillRate = totalCapacity > 0 ? Math.round((totalBooked / totalCapacity) * 100) : 0;
 
-    const evaluatedRegs = registrations.filter(r => r.evaluation !== null);
-    const passCount = evaluatedRegs.filter(r => r.evaluation.result === 'pass').length;
-    const failCount = evaluatedRegs.filter(r => r.evaluation.result === 'fail').length;
-    const holdCount = evaluatedRegs.filter(r => r.evaluation.result === 'hold').length;
+    const evaluatedRegs = registrations.filter(r => r.evaluation && typeof r.evaluation === 'object');
+    const passCount = evaluatedRegs.filter(r => r.evaluation?.result === 'pass').length;
+    const failCount = evaluatedRegs.filter(r => r.evaluation?.result === 'fail').length;
+    const holdCount = evaluatedRegs.filter(r => r.evaluation?.result === 'hold').length;
 
     const deptStats = this.data.departments.map(dept => {
       const deptRegs = registrations.filter(r => r.departmentId === dept.id);
@@ -1436,6 +1362,35 @@ class Store {
     };
   }
 }
+
+// ==================== HỆ THỐNG PHÂN QUYỀN TÍNH NĂNG (GRANULAR FEATURE PERMISSIONS) ====================
+const ALL_PERMISSIONS = {
+  // 1. Quản lý Ca & Lịch Phỏng Vấn
+  'slots:view_all': { key: 'slots:view_all', name: 'Xem lịch toàn bộ 6 ban', category: '📅 Quản Lý Ca & Lịch' },
+  'slots:create': { key: 'slots:create', name: 'Tạo ca phỏng vấn mới', category: '📅 Quản Lý Ca & Lịch' },
+  'slots:import_csv': { key: 'slots:import_csv', name: 'Import lịch từ file CSV', category: '📅 Quản Lý Ca & Lịch' },
+  'slots:edit_capacity': { key: 'slots:edit_capacity', name: 'Điều chỉnh số lượng ứng viên (1 - 3)', category: '📅 Quản Lý Ca & Lịch' },
+  'slots:toggle_open': { key: 'slots:toggle_open', name: 'Khóa / Mở ca phỏng vấn', category: '📅 Quản Lý Ca & Lịch' },
+  'slots:delete': { key: 'slots:delete', name: 'Xóa ca phỏng vấn', category: '📅 Quản Lý Ca & Lịch' },
+  'slots:set_deadline': { key: 'slots:set_deadline', name: 'Cài đặt Deadline đăng ký & đổi ca', category: '📅 Quản Lý Ca & Lịch' },
+
+  // 2. Quản lý Ứng Viên & Đơn Đăng Ký
+  'candidates:view_all': { key: 'candidates:view_all', name: 'Xem ứng viên toàn bộ 6 ban', category: '📑 Quản Lý Ứng Viên' },
+  'candidates:override_slot': { key: 'candidates:override_slot', name: 'Can thiệp đổi ca thủ công (Override)', category: '📑 Quản Lý Ứng Viên' },
+  'candidates:cancel_reg': { key: 'candidates:cancel_reg', name: 'Hủy / Xóa đơn đăng ký của ứng viên', category: '📑 Quản Lý Ứng Viên' },
+
+  // 3. Điểm Danh Phỏng Vấn
+  'checkin:view_all': { key: 'checkin:view_all', name: 'Xem & Điểm danh toàn bộ 6 ban', category: '📋 Điểm Danh' },
+  'checkin:mark_status': { key: 'checkin:mark_status', name: 'Thực hiện điểm danh (Có mặt / Vắng)', category: '📋 Điểm Danh' },
+
+  // 4. Cấu Hình & Quản Trị Hệ Thống
+  'system:manage_campaign': { key: 'system:manage_campaign', name: 'Tạo đợt tuyển mới (Gen mới)', category: '⚙️ Quản Trị Hệ Thống' },
+  'system:audit_log': { key: 'system:audit_log', name: 'Xem Lịch sử hoạt động (Audit Logs)', category: '⚙️ Quản Trị Hệ Thống' }
+};
+
+const ALL_PERMISSION_KEYS = Object.keys(ALL_PERMISSIONS);
+window.ALL_PERMISSIONS = ALL_PERMISSIONS;
+window.ALL_PERMISSION_KEYS = ALL_PERMISSION_KEYS;
 
 window.appStore = new Store();
 // Danh mục quyền và thông tin vai trò Admin (KHÔNG CHỨA MẬT KHẨU THÔ)
@@ -1475,15 +1430,6 @@ const INITIAL_ADMINS = [
     id: 'adm-bcn-3',
     username: 'hoduongkhanhvy.mcc@gmail.com',
     fullName: 'Hồ Dương Khánh Vy',
-    role: 'Ban Chủ Nhiệm',
-    avatar: '👑',
-    deptId: 'all',
-    hasFullAccess: true
-  },
-  {
-    id: 'adm-bcn-shared',
-    username: 'banchunhiem.mcc@gmail.com',
-    fullName: 'Ban Chủ Nhiệm',
     role: 'Ban Chủ Nhiệm',
     avatar: '👑',
     deptId: 'all',
@@ -1531,15 +1477,6 @@ const INITIAL_ADMINS = [
     id: 'adm-mentor-5',
     username: 'nguyenngocanh.mcc@gmail.com',
     fullName: 'Nguyễn Ngọc Anh',
-    role: 'Mentor',
-    avatar: '🎖️',
-    deptId: 'all',
-    hasFullAccess: true
-  },
-  {
-    id: 'adm-mentor-shared',
-    username: 'mentor.mcc@gmail.com',
-    fullName: 'Mentor',
     role: 'Mentor',
     avatar: '🎖️',
     deptId: 'all',
@@ -1664,15 +1601,6 @@ const INITIAL_ADMINS = [
     deptId: 'all',
     hasFullAccess: true
   },
-  {
-    id: 'adm-hr-shared',
-    username: 'bannhansu.mcc@gmail.com',
-    fullName: 'Ban Nhân Sự',
-    role: 'Ban Nhân Sự',
-    avatar: '📋',
-    deptId: 'all',
-    hasFullAccess: true
-  },
 
   // --- 4. 5 BAN CHUYÊN MÔN (CHỈ HIỂN THỊ TÊN BAN, XEM LỊCH + ỨNG VIÊN & ĐIỂM DANH BAN MÌNH) ---
   {
@@ -1722,10 +1650,77 @@ const INITIAL_ADMINS = [
   }
 ];
 
-// Quản lý danh mục quản trị viên (KHÔNG CHỨA MẬT KHẨU THÔ - 100% BẢO MẬT TRÊN FIREBASE AUTH)
+// Quản lý danh mục quản trị viên & Hệ thống phân quyền tính năng
+Store.prototype.getDefaultPermissionsForRole = function(admin) {
+  if (!admin) return [];
+  if (admin.id === 'adm-root-admin' || admin.username === 'admin.mcc@gmail.com' || admin.role === 'Admin' || admin.fullName?.toLowerCase() === 'admin') {
+    return [...ALL_PERMISSION_KEYS];
+  }
+  if (admin.role === 'Ban Chủ Nhiệm' || admin.role === 'Mentor') {
+    return [...ALL_PERMISSION_KEYS];
+  }
+  if (admin.role === 'Ban Nhân Sự' || admin.deptId === 'all') {
+    return [
+      'slots:view_all', 'slots:create', 'slots:import_csv', 'slots:toggle_open', 'slots:set_deadline',
+      'candidates:view_all', 'candidates:override_slot', 'candidates:cancel_reg',
+      'checkin:view_all', 'checkin:mark_status',
+      'system:audit_log'
+    ];
+  }
+  // 5 Ban Chuyên Môn
+  return ['checkin:mark_status'];
+};
+
 Store.prototype.getAdmins = function() {
-  this.data.admins = JSON.parse(JSON.stringify(INITIAL_ADMINS));
-  return this.data.admins;
+  const admins = JSON.parse(JSON.stringify(INITIAL_ADMINS));
+  const permsMap = this.data.adminPermissions || {};
+  return admins.map(a => {
+    const custom = permsMap[a.id];
+    return {
+      ...a,
+      permissions: Array.isArray(custom) ? custom : this.getDefaultPermissionsForRole(a)
+    };
+  });
+};
+
+Store.prototype.getAdminPermissions = function(adminId) {
+  if (!this.data.adminPermissions) this.data.adminPermissions = {};
+  if (Array.isArray(this.data.adminPermissions[adminId])) {
+    return this.data.adminPermissions[adminId];
+  }
+  const admin = INITIAL_ADMINS.find(a => a.id === adminId);
+  return this.getDefaultPermissionsForRole(admin);
+};
+
+Store.prototype.updateAdminPermissions = function(adminId, newPermissions) {
+  if (!this.data.adminPermissions) this.data.adminPermissions = {};
+  const perms = Array.isArray(newPermissions) ? newPermissions : [];
+  this.data.adminPermissions[adminId] = perms;
+  const targetAdmin = INITIAL_ADMINS.find(a => a.id === adminId);
+  const current = this.getCurrentAdmin();
+  this.logAudit(
+    current?.fullName || 'admin',
+    'UPDATE_PERMISSIONS',
+    'Admin',
+    adminId,
+    null,
+    { permissionsCount: perms.length, permissions: perms },
+    `Cập nhật phân quyền cho tài khoản [${targetAdmin?.fullName || adminId}] (${perms.length} tính năng)`
+  );
+  this.saveData();
+  this.notify();
+  return perms;
+};
+
+Store.prototype.hasPermission = function(permKey, admin = null) {
+  const current = admin || this.getCurrentAdmin();
+  if (!current) return false;
+  // Tài khoản admin cấp cao luôn có toàn bộ quyền
+  if (current.id === 'adm-root-admin' || current.username === 'admin.mcc@gmail.com' || current.role === 'Admin' || current.fullName?.toLowerCase() === 'admin') {
+    return true;
+  }
+  const perms = this.getAdminPermissions(current.id);
+  return perms.includes(permKey);
 };
 
 Store.prototype.updateAdminProfile = async function(adminId, { currentPassword, newPassword }) {
