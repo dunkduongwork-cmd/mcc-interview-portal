@@ -1,4 +1,4 @@
-# 🌟 MCC.UEB - Cổng Đăng Ký & Quản Trị Ca Phỏng Vấn Tuyển Quân Gen XVI
+# 🌟 MCC.UEB - Cổng Đăng Ký & Quản Trị Ca Phỏng Vấn Tuyển Quân Gen XVII — THE WONDER BOUND
 **CLB Truyền Thông MCC - Trường Đại học Kinh tế, ĐHQGHN (VNU-UEB)**
 
 Hệ thống web portal chuyên nghiệp phục vụ công tác tuyển quân: Đăng ký ca phỏng vấn trực tuyến cho ứng viên (xác thực OTP qua email, chống trùng lịch, chống spam hạn mức) và Hệ thống Quản trị & Điểm danh thực địa thời gian thực (Real-time Firebase Firestore & Firebase Authentication).

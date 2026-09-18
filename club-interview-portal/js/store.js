@@ -3,7 +3,7 @@
  * Media & Communication Club - VNU University of Economics and Business (UEB)
  */
 
-const STORAGE_KEY = 'MCC_UEB_CLEAN_SLATE_V7';
+const STORAGE_KEY = 'MCC_UEB_CLEAN_SLATE_V8';
 
 // --- ENTERPRISE SECURITY & INPUT SANITIZATION UTILITIES ---
 function escapeHtml(str) {
@@ -70,7 +70,7 @@ const generate50Slots = () => {
         if (deptCounts[deptId] < targetPerDept[deptId]) {
           slots.push({
             id: `slot-${idCount++}`,
-            campaignId: 'camp-gen16',
+            campaignId: 'camp-gen17',
             departmentId: deptId,
             date: date,
             startTime: shift.start,
@@ -97,17 +97,17 @@ const INITIAL_REGISTRATIONS = [];
 const INITIAL_AUDIT_LOGS = [
   {
     id: 'audit-init-1',
-    campaignId: 'camp-gen16',
+    campaignId: 'camp-gen17',
     adminName: 'Ban Quản Trị MCC',
     action: 'CREATE_CAMPAIGN',
     entityType: 'Campaign',
-    entityId: 'camp-gen16',
-    reason: 'Khởi tạo đợt tuyển Gen XVI - FRAMEJUMP',
+    entityId: 'camp-gen17',
+    reason: 'Khởi tạo đợt tuyển Gen XVII - THE WONDER BOUND',
     timestamp: new Date(Date.now() - 86400000 * 2).toISOString()
   },
   {
     id: 'audit-init-2',
-    campaignId: 'camp-gen16',
+    campaignId: 'camp-gen17',
     adminName: 'Ban Quản Trị MCC',
     action: 'BULK_OPEN_SLOTS',
     entityType: 'Slot',
@@ -313,11 +313,13 @@ function getDateStr(days = 0) {
 // Multi-Campaign List
 const INITIAL_CAMPAIGNS = [
   {
-    id: 'camp-gen16',
-    name: 'FRAMEJUMP',
-    gen: 'Gen XVI',
+    id: 'camp-gen17',
+    name: 'THE WONDER BOUND',
+    gen: 'Gen XVII',
     academicYear: '2026 - 2027',
-    slogan: 'JUMP THE FRAME - OWN THE SCENE',
+    slogan: "BE THE FLAVOR WE'RE MISSING",
+    bannerImage: 'images/wonder-bound-banner.png',
+    backgroundImage: 'images/wonder-bound-bg.png',
     locationOffline: 'Phòng 501 - Nhà E4, Trường ĐH Kinh tế - ĐHQGHN (144 Xuân Thủy, Cầu Giấy, HN)',
     contactEmail: 'mcc.ueb.vnu@gmail.com',
     contactHotline: '0987.654.321 (Ban Tuyển Quân MCC)',
@@ -380,13 +382,38 @@ class Store {
               );
             }
 
-            // Loại bỏ hoàn toàn Gen XV và Gen XIV, cố định Gen XVI
+            // Loại bỏ hoàn toàn Gen XV và Gen XIV, nâng cấp lên Gen XVII - THE WONDER BOUND
+            let migratedCampaign = false;
             if (Array.isArray(cloudData.campaigns)) {
               cloudData.campaigns = cloudData.campaigns.filter(c => c.id !== 'camp-gen15' && c.id !== 'camp-gen14');
+              cloudData.campaigns.forEach(c => {
+                if (c.id === 'camp-gen16' || c.name === 'FRAMEJUMP' || c.gen === 'Gen XVI') {
+                  c.id = 'camp-gen17';
+                  c.name = 'THE WONDER BOUND';
+                  c.gen = 'Gen XVII';
+                  c.slogan = "BE THE FLAVOR WE'RE MISSING";
+                  c.bannerImage = 'images/wonder-bound-banner.png';
+                  c.backgroundImage = 'images/wonder-bound-bg.png';
+                  migratedCampaign = true;
+                }
+              });
+              if (!cloudData.campaigns.some(c => c.id === 'camp-gen17')) {
+                cloudData.campaigns.unshift(INITIAL_CAMPAIGNS[0]);
+                migratedCampaign = true;
+              }
               const hasActive = cloudData.campaigns.some(c => c.isActive);
               if (!hasActive && cloudData.campaigns.length > 0) {
                 cloudData.campaigns[0].isActive = true;
               }
+            }
+
+            if (Array.isArray(cloudData.slots)) {
+              cloudData.slots.forEach(s => {
+                if (s.campaignId === 'camp-gen16') {
+                  s.campaignId = 'camp-gen17';
+                  migratedCampaign = true;
+                }
+              });
             }
 
             // Loại bỏ hoàn toàn tài khoản dùng chung (banchunhiem, mentor, bannhansu) nếu có lưu trên Cloud
@@ -405,6 +432,9 @@ class Store {
             this.notify();
             this.isSyncingFromCloud = false;
             console.log('⚡ [Firebase Realtime] Đồng bộ dữ liệu toàn hệ thống thành công!');
+            if (cloudDb && migratedCampaign) {
+              docRef.set(cloudData).catch(e => console.warn('Lỗi khi cập nhật đợt tuyển Gen XVII lên Cloud:', e));
+            }
           }
         } else {
           // Khởi tạo dữ liệu gốc lên Firestore lần đầu tiên
@@ -474,13 +504,32 @@ class Store {
 
         parsed.systemSettings = { isWaitlistEnabled: false };
 
-        // Loại bỏ hoàn toàn Gen XV và Gen XIV khỏi bộ nhớ lưu trữ, cố định Gen XVI
+        // Loại bỏ hoàn toàn Gen XV và Gen XIV khỏi bộ nhớ lưu trữ, nâng cấp lên Gen XVII - THE WONDER BOUND
         if (Array.isArray(parsed.campaigns)) {
           parsed.campaigns = parsed.campaigns.filter(c => c.id !== 'camp-gen15' && c.id !== 'camp-gen14');
+          parsed.campaigns.forEach(c => {
+            if (c.id === 'camp-gen16' || c.name === 'FRAMEJUMP' || c.gen === 'Gen XVI') {
+              c.id = 'camp-gen17';
+              c.name = 'THE WONDER BOUND';
+              c.gen = 'Gen XVII';
+              c.slogan = "BE THE FLAVOR WE'RE MISSING";
+              c.bannerImage = 'images/wonder-bound-banner.png';
+              c.backgroundImage = 'images/wonder-bound-bg.png';
+            }
+          });
+          if (!parsed.campaigns.some(c => c.id === 'camp-gen17')) {
+            parsed.campaigns.unshift(INITIAL_CAMPAIGNS[0]);
+          }
           const hasActive = parsed.campaigns.some(c => c.isActive);
           if (!hasActive && parsed.campaigns.length > 0) {
             parsed.campaigns[0].isActive = true;
           }
+        }
+
+        if (Array.isArray(parsed.slots)) {
+          parsed.slots.forEach(s => {
+            if (s.campaignId === 'camp-gen16') s.campaignId = 'camp-gen17';
+          });
         }
 
         // Loại bỏ hoàn toàn tài khoản dùng chung (banchunhiem, mentor, bannhansu) khỏi bộ nhớ lưu trữ

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCC.UEB — Cổng Đăng Ký Ca Phỏng Vấn Tuyển Quân</title>
+  <title>MCC.UEB — Cổng Đăng Ký & Quản Trị Ca Phỏng Vấn Tuyển Quân Gen XVII | THE WONDER BOUND</title>
   <link rel="icon" type="image/png" href="images/mcc-logo.png">
   
   <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono (Chuẩn Tiếng Việt 100%) -->
@@ -104,57 +104,99 @@
     <!-- ========================================== -->
     <section id="view-candidate" class="space-y-6 sm:space-y-8 animate-fade-in">
       
-      <!-- Hero Banner (Rich Crimson Wine Gradient & Warm Gold Highlights) -->
-      <div class="relative overflow-hidden rounded-3xl bg-mcc-hero text-white p-7 sm:p-10 shadow-xl border border-red-950/40">
-        <!-- Ambient brand glows -->
-        <div class="absolute -right-16 -bottom-16 w-96 h-96 bg-red-500/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -left-16 -top-16 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <!-- Unified Hero Banner: Lồng chữ và thông tin trực tiếp vào Background Wonka Wonderland -->
+      <div id="hero-campaign-banner-container" class="relative overflow-hidden rounded-3xl text-white shadow-2xl border border-purple-900/40 bg-[#240833] min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] flex flex-col justify-end p-6 sm:p-10 lg:p-12 group">
+        
+        <!-- Background Artwork with object-top to keep the official 4-logo pill at top-center -->
+        <img id="hero-campaign-bg-img" src="images/wonder-bound-bg.png" alt="THE WONDER BOUND Background" class="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-[1.015] transition-transform duration-1000 ease-out">
+        
+        <!-- Smart Dark Tint & Film Gradient Overlays for High Legibility while Preserving Wonderland Artwork -->
+        <div class="absolute inset-0 bg-gradient-to-r from-[#170422]/95 via-[#230833]/70 sm:via-[#230833]/50 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#15031F]/90 via-[#15031F]/35 to-transparent"></div>
 
-        <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div class="max-w-3xl space-y-3.5">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-white/15 border border-white/20 text-[#F5E6C8] backdrop-blur-md shadow-xs">
-                <span class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></span>
-                MEDIA AND COMMUNICATION CLUB
-              </span>
-              <span id="hero-campaign-gen" class="text-xs font-bold px-3 py-1 rounded-full bg-black/30 text-amber-100 border border-white/10 tracking-wide uppercase">
-                CHECK IN GEN XVI (2026 – 2027)
-              </span>
+        <!-- Theatrical Follow Spotlight (Đèn rọi sân khấu dõi theo chuột) -->
+        <div id="hero-theatrical-spotlight"></div>
+
+        <!-- Velvet Curtain Drape Breathing Overlays (Nhịp thở rèm sân khấu kịch nghệ) -->
+        <div class="curtain-drape-left"></div>
+        <div class="curtain-drape-right"></div>
+
+        <!-- Floating Golden Stardust Particles Layer (Bụi vàng ma thuật Wonka) -->
+        <div id="hero-stardust-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-10">
+          <div class="stardust-particle sd-1"></div>
+          <div class="stardust-particle sd-2"></div>
+          <div class="stardust-particle sd-3"></div>
+          <div class="stardust-particle sd-4"></div>
+          <div class="stardust-particle sd-5"></div>
+          <div class="stardust-particle sd-6"></div>
+          <div class="stardust-particle sd-7"></div>
+          <div class="stardust-particle sd-8"></div>
+          <div class="stardust-particle sd-9"></div>
+          <div class="stardust-particle sd-10"></div>
+          <div class="stardust-particle sd-11"></div>
+          <div class="stardust-particle sd-12"></div>
+        </div>
+
+        <!-- Top Center Official Organization Logos (Cụm 4 Logo 3D Nghệ Thuật: UEB - Đoàn TN - Hội SV - MCC) -->
+        <div class="absolute top-3.5 sm:top-5 inset-x-0 flex justify-center z-20 pointer-events-none">
+          <div id="hero-top-medallion" class="relative inline-flex items-center justify-center pointer-events-auto transition-transform duration-300 hover:scale-105" title="Đơn vị bảo trợ & tổ chức: ĐH Kinh tế UEB • Đoàn Thanh niên • Hội Sinh viên • CLB MCC">
+            <!-- 3D Ambient Gold Halo Glow (Quầng hào quang vàng kim hắt ra rèm nhung) -->
+            <div class="absolute -inset-2.5 bg-gradient-to-r from-amber-500/0 via-amber-400/35 to-amber-500/0 blur-md rounded-full pointer-events-none"></div>
+
+            <!-- Floating 3D Medallion Body -->
+            <div class="relative rounded-full overflow-hidden animate-medallion-float filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)] drop-shadow-[0_0_15px_rgba(245,158,11,0.35)]">
+              <img src="images/campaign-logos-pill.png" alt="Logo UEB - Đoàn TN - Hội SV - CLB MCC" class="h-10 sm:h-12 md:h-14 w-auto object-contain brightness-105 contrast-105">
+              
+              <!-- Shimmer Gleam (Vệt sáng kim loại quét chéo định kỳ) -->
+              <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/35 to-transparent animate-shimmer-sweep pointer-events-none"></div>
+
+              <!-- Top Specular Bevel Highlight (Gờ phản quang kim loại phía trên) -->
+              <div class="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none"></div>
             </div>
 
-            <div class="space-y-1">
-              <h1 id="hero-campaign-name" class="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-[#FFF8EB] uppercase drop-shadow-sm">
-                FRAMEJUMP
-              </h1>
-            </div>
-
-            <p id="hero-campaign-slogan" class="text-[#F5E6C8] font-extrabold text-xs sm:text-sm tracking-widest uppercase">
-              "JUMP THE FRAME - OWN THE SCENE"
-            </p>
-
-            <!-- Deadline Notice Banner (Inline Compact Layout) -->
-            <div id="hero-deadline-box" class="p-3 px-4 rounded-2xl bg-black/35 border border-white/15 backdrop-blur-md inline-flex flex-wrap items-center gap-3 text-xs shadow-inner mt-1">
-              <div class="flex items-center gap-2 text-amber-50">
-                <span>⏰</span>
-                <span>Hạn chót đăng ký & đổi ca: <strong id="hero-deadline-text" class="text-amber-300 font-bold font-mono">--/--/----</strong></span>
-              </div>
-              <span id="hero-deadline-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs whitespace-nowrap flex items-center gap-1.5">
-                <span class="relative flex h-1.5 w-1.5">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-                </span>
-                <span>Đang nhận đơn ứng tuyển</span>
-              </span>
-            </div>
-          </div>
-
-          <!-- Hero Floating Brand Emblem (Desktop) -->
-          <div class="hidden lg:flex items-center justify-center relative pr-4">
-            <div class="w-32 h-32 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 p-3 shadow-2xl flex items-center justify-center animate-float">
-              <img src="images/mcc-logo.png" alt="MCC Seal" class="w-full h-full object-contain drop-shadow-md">
-            </div>
+            <!-- Magical Wonka Sparkle Accent (Đốm sao 4 cánh lấp lánh tại mép viền vàng) -->
+            <span class="absolute -top-1.5 -right-2 text-amber-300 text-xs sm:text-sm font-black drop-shadow-[0_0_8px_rgba(250,204,21,0.9)] animate-sparkle-twinkle select-none pointer-events-none">✦</span>
           </div>
         </div>
+
+        <!-- Hero Content Layer (Lồng chữ & các thông tin điều hành) -->
+        <div id="hero-content-layer" class="relative z-10 max-w-2xl space-y-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-white/20 border border-white/25 text-amber-200 backdrop-blur-md shadow-xs">
+              <span class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></span>
+              MEDIA AND COMMUNICATION CLUB
+            </span>
+            <span id="hero-campaign-gen" class="text-xs font-black px-3.5 py-1 rounded-full bg-black/45 text-amber-100 border border-amber-300/30 tracking-wide uppercase backdrop-blur-md shadow-xs">
+              CHECK IN GEN XVII (2026 – 2027)
+            </span>
+          </div>
+
+          <div class="space-y-1">
+            <h1 id="hero-campaign-name" class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight uppercase drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]">
+              <span class="title-gold-shimmer">THE WONDER BOUND</span>
+            </h1>
+          </div>
+
+          <p id="hero-campaign-slogan" class="text-amber-200 font-extrabold text-xs sm:text-sm lg:text-base tracking-widest uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] flex items-center gap-2">
+            <span>✨</span> <span>"BE THE FLAVOR WE'RE MISSING"</span>
+          </p>
+
+          <!-- Deadline Notice Banner (Glassmorphism Pill) -->
+          <div id="hero-deadline-box" class="p-3.5 px-4.5 rounded-2xl bg-black/55 border border-white/20 backdrop-blur-md inline-flex flex-wrap items-center gap-3 text-xs shadow-xl mt-2">
+            <div class="flex items-center gap-2 text-amber-50">
+              <span class="text-base">⏰</span>
+              <span>Hạn chót đăng ký & đổi ca: <strong id="hero-deadline-text" class="text-amber-300 font-bold font-mono">--/--/----</strong></span>
+            </div>
+            <span id="hero-deadline-badge" class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs whitespace-nowrap flex items-center gap-1.5">
+              <span class="relative flex h-1.5 w-1.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+              </span>
+              <span>Đang nhận đơn ứng tuyển</span>
+            </span>
+          </div>
+        </div>
+
       </div>
 
       <!-- Expired Deadline Notice Card (Displayed when deadline has passed) -->
@@ -171,7 +213,7 @@
             Đã Hết Hạn Đăng Ký & Chọn Ca Phỏng Vấn
           </h3>
           <p class="text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
-            Chiến dịch tuyển quân <strong class="text-slate-900" id="expired-camp-name">FRAMEJUMP</strong> của CLB Truyền Thông MCC đã chính thức kết thúc thời gian nhận đăng ký và chọn ca phỏng vấn.
+            Chiến dịch tuyển quân <strong class="text-slate-900" id="expired-camp-name">THE WONDER BOUND</strong> của CLB Truyền Thông MCC đã chính thức kết thúc thời gian nhận đăng ký và chọn ca phỏng vấn.
           </p>
         </div>
 
@@ -202,8 +244,8 @@
       <div id="candidate-wizard-card" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-8">
         
         <!-- Step Progress Indicator -->
-        <div class="border-b border-slate-100 pb-6">
-          <div class="flex items-center justify-between max-w-2xl mx-auto">
+        <div class="border-b border-slate-100 pb-6 relative">
+          <div class="flex items-center justify-between max-w-2xl mx-auto relative">
             
             <div class="step-indicator flex items-center gap-2 text-orange-600 font-bold text-xs" data-step="1">
               <div class="w-7 h-7 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-black shadow-xs">1</div>
@@ -244,13 +286,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Họ và tên *</label>
-                <input type="text" id="wiz-fullname" placeholder="Ví dụ: Nguyễn Văn A" required
+                <input type="text" id="wiz-fullname" placeholder="Nhập họ và tên" required
                   maxlength="50" autocomplete="name"
                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Mã sinh viên (MSV) *</label>
-                <input type="text" id="wiz-studentid" placeholder="Ví dụ: 24050001" required
+                <input type="text" id="wiz-studentid" placeholder="Nhập mã sinh viên" required
                   maxlength="8" pattern="\d{8}" inputmode="numeric" autocomplete="off"
                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-mono font-medium">
               </div>
@@ -259,19 +301,19 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Email cá nhân hoạt động *</label>
-                <input type="email" id="wiz-email" placeholder="ungvien@gmail.com" required
+                <input type="email" id="wiz-email" placeholder="Nhập địa chỉ email" required
                   maxlength="80" autocomplete="email"
                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Số điện thoại (Zalo) *</label>
-                <input type="tel" id="wiz-phone" placeholder="09xxxxxxxx" required
+                <input type="tel" id="wiz-phone" placeholder="Nhập số điện thoại" required
                   maxlength="10" pattern="0[35789]\d{8}" inputmode="numeric" autocomplete="tel"
                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Lớp / Khóa (tùy chọn)</label>
-                <input type="text" id="wiz-class" placeholder="Ví dụ: QH-2024-E CLC 1"
+                <input type="text" id="wiz-class" placeholder="Nhập lớp / khóa (nếu có)"
                   maxlength="30"
                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none text-slate-800 placeholder:text-slate-400 font-medium">
               </div>
@@ -407,13 +449,13 @@
         <form id="form-request-otp" class="space-y-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Mã sinh viên (MSV) *</label>
-            <input type="text" id="lookup-studentid" placeholder="Ví dụ: 24050001" required
+            <input type="text" id="lookup-studentid" placeholder="Nhập mã sinh viên" required
               maxlength="8" pattern="\d{8}" inputmode="numeric" autocomplete="off"
               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-mono font-bold">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Email đăng ký *</label>
-            <input type="email" id="lookup-email" placeholder="ungvien@gmail.com" required
+            <input type="email" id="lookup-email" placeholder="Nhập email đã đăng ký" required
               maxlength="80" autocomplete="email"
               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-medium">
           </div>
@@ -501,13 +543,13 @@
         <form id="form-admin-login" class="space-y-4 text-xs">
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Tài khoản / Email *</label>
-            <input type="text" id="admin-login-username" value="" placeholder="admin.mcc@gmail.com" required
+            <input type="text" id="admin-login-username" value="" placeholder="Nhập tài khoản hoặc email" required
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-medium">
           </div>
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Mật khẩu *</label>
             <div class="relative">
-              <input type="password" id="admin-login-password" value="" placeholder="••••••••" required
+              <input type="password" id="admin-login-password" value="" placeholder="Nhập mật khẩu" required
                 class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none font-medium">
               <button type="button" id="btn-toggle-admin-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-lg text-base transition-all select-none cursor-pointer" title="Hiện/Ẩn mật khẩu">
                 👁️
@@ -1004,9 +1046,14 @@
         <!-- Injected dynamically -->
       </div>
 
-      <button type="button" class="close-modal-btn w-full py-3 text-xs font-bold rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors">
-        Hoàn Tất & Đóng Cửa Sổ
-      </button>
+      <div class="flex flex-col sm:flex-row gap-2 pt-2">
+        <button type="button" data-route="lookup" class="close-modal-btn flex-1 py-3 text-xs font-bold rounded-2xl bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200 cursor-pointer transition-all flex items-center justify-center gap-1.5">
+          <span>🔍</span> <span>Tra cứu / Đổi ca ngay</span>
+        </button>
+        <button type="button" class="close-modal-btn flex-1 py-3 text-xs font-bold rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors">
+          Hoàn Tất & Đóng
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1023,12 +1070,12 @@
       <form id="form-create-campaign" class="space-y-4 text-xs">
         <div>
           <label class="block font-bold text-slate-700 mb-1.5">Tên Đợt Tuyển *</label>
-          <input type="text" id="camp-name" placeholder="Tuyển Quân Gen XVI - FRAMEJUMP" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
+          <input type="text" id="camp-name" placeholder="Nhập tên đợt tuyển..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Thế Hệ (Gen) *</label>
-            <input type="text" id="camp-gen" placeholder="Gen XVI" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
+            <input type="text" id="camp-gen" placeholder="Nhập khóa/nhiệm kỳ (VD: Gen XVII)" required class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none">
           </div>
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Năm Học *</label>
@@ -1129,7 +1176,7 @@
 
         <div>
           <label class="block font-bold text-slate-700 mb-1.5">Lý Do Can Thiệp (tùy chọn để lưu lịch sử):</label>
-          <textarea id="override-reason" rows="2" placeholder="Ví dụ: Ứng viên gọi hotline xin đổi ca do trùng lịch thi, xin hủy ca..."
+          <textarea id="override-reason" rows="2" placeholder="Nhập lý do điều chỉnh lịch phỏng vấn..."
             class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none text-xs"></textarea>
         </div>
 
@@ -1229,7 +1276,7 @@
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Mật khẩu hiện tại</label>
             <div class="relative">
-              <input type="password" id="profile-admin-curr-pass" placeholder="••••••••"
+              <input type="password" id="profile-admin-curr-pass" placeholder="Nhập mật khẩu hiện tại"
                 class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 focus:border-[#C23B22] focus:ring-2 focus:ring-orange-100 outline-none">
               <button type="button" class="btn-toggle-eye absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs cursor-pointer" data-target="profile-admin-curr-pass">👁️</button>
             </div>
@@ -1329,7 +1376,7 @@
           Facebook: fb.com/MCC.UEB ↗
         </a>
         <span>•</span>
-        <span class="text-slate-400 font-semibold font-mono">FRAMEJUMP GEN XVI</span>
+        <span class="text-slate-400 font-semibold font-mono">THE WONDER BOUND • GEN XVII</span>
       </div>
     </div>
   </footer>
@@ -1344,9 +1391,9 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script src="js/email.js?v=3.4"></script>
-  <script src="js/store.js?v=3.4"></script>
-  <script src="js/components.js?v=3.4"></script>
-  <script src="js/app.js?v=3.4"></script>
+  <script src="js/email.js?v=3.7"></script>
+  <script src="js/store.js?v=3.7"></script>
+  <script src="js/components.js?v=3.7"></script>
+  <script src="js/app.js?v=3.7"></script>
 </body>
 </html>

@@ -38,28 +38,62 @@ function initApp() {
   function triggerConfetti() {
     if (typeof window.confetti === 'function') {
       try {
+        // Concept Palette: Tím mận, vàng ánh kim, cam nhiệt huyết, xanh lá, chocolate & hồng kẹo
+        const makerHatColors = [
+          '#581C87', '#7E22CE', // Plum Purple (Tím mận ma thuật)
+          '#F59E0B', '#FBBF24', '#FDE68A', // Gold & Amber (Vàng ánh kim & Phép màu)
+          '#EA580C', '#C23B22', '#8B1E22', // Orange & MCC Crimson (Cam & Đỏ rượu MCC)
+          '#22C55E', '#10B981', // Apple Green (Xanh lá độc bản)
+          '#78350F', '#451A03', // Rich Chocolate Brown (Nâu chocolate Wonka)
+          '#EC4899', '#F472B6'  // Sweet Candy Pink (Hồng kẹo ngọt)
+        ];
+        
+        // Stage 1: The Maker's Hat High-Velocity Vertical Eruption (Bắn vút từ chiếc mũ ở đáy màn hình)
         window.confetti({
-          particleCount: 75,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#8B1E22', '#E2B774', '#ea580c', '#059669', '#3b82f6']
+          particleCount: 120,
+          angle: 90,
+          spread: 65,
+          startVelocity: 65,
+          origin: { x: 0.5, y: 0.88 },
+          colors: makerHatColors,
+          gravity: 0.9,
+          scalar: 1.15,
+          ticks: 320
         });
+
+        // Stage 2: Dual Symmetrical Arc Wing Bursts (Cánh cung bung tỏa hai bên)
         setTimeout(() => {
           window.confetti({
-            particleCount: 45,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ['#8B1E22', '#E2B774', '#F5E6C8']
+            particleCount: 65,
+            angle: 55,
+            spread: 60,
+            startVelocity: 55,
+            origin: { x: 0.1, y: 0.8 },
+            colors: ['#F59E0B', '#FBBF24', '#7E22CE', '#EA580C', '#22C55E']
           });
           window.confetti({
-            particleCount: 45,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ['#8B1E22', '#E2B774', '#F5E6C8']
+            particleCount: 65,
+            angle: 125,
+            spread: 60,
+            startVelocity: 55,
+            origin: { x: 0.9, y: 0.8 },
+            colors: ['#F59E0B', '#FBBF24', '#7E22CE', '#EA580C', '#22C55E']
           });
-        }, 220);
+        }, 160);
+
+        // Stage 3: Sweet Candy Balls & Stardust Shower (Mưa kẹo ngọt và bụi sao rơi chầm chậm)
+        setTimeout(() => {
+          window.confetti({
+            particleCount: 60,
+            spread: 120,
+            origin: { x: 0.5, y: 0.25 },
+            colors: ['#FDE68A', '#FBBF24', '#FFFFFF', '#EC4899', '#22C55E'],
+            shapes: ['circle'],
+            gravity: 0.6,
+            scalar: 0.85,
+            ticks: 280
+          });
+        }, 380);
       } catch (err) {
         console.warn('Confetti trigger warning:', err);
       }
@@ -118,7 +152,7 @@ function initApp() {
     }, 600);
   });
 
-  // --- NAVIGATION ROUTER ---
+  // --- NAVIGATION ROUTER & DEEP LINKING (HASH ROUTING) ---
   const navLinks = document.querySelectorAll('[data-route]');
   const views = {
     candidate: document.getElementById('view-candidate'),
@@ -126,10 +160,31 @@ function initApp() {
     admin: document.getElementById('view-admin')
   };
 
-  function switchRoute(routeName) {
+  // Route alias mappings (Bilingual support for URLs)
+  const ROUTE_MAP = {
+    'dang-ky': 'candidate',
+    'candidate': 'candidate',
+    'home': 'candidate',
+    '': 'candidate',
+    'tra-cuu': 'lookup',
+    'lookup': 'lookup',
+    'doi-ca': 'lookup',
+    'admin': 'admin',
+    'quan-tri': 'admin'
+  };
+
+  const REVERSE_ROUTE_MAP = {
+    'candidate': 'dang-ky',
+    'lookup': 'tra-cuu',
+    'admin': 'admin'
+  };
+
+  function switchRoute(routeName, updateHash = true) {
+    const resolvedRoute = ROUTE_MAP[routeName] || routeName;
+
     Object.keys(views).forEach(k => {
       if (views[k]) {
-        if (k === routeName) views[k].classList.remove('hidden');
+        if (k === resolvedRoute) views[k].classList.remove('hidden');
         else views[k].classList.add('hidden');
       }
     });
@@ -144,7 +199,7 @@ function initApp() {
     navButtons.forEach(({ id, route, hasBorder }) => {
       const btn = document.getElementById(id);
       if (!btn) return;
-      const isActive = (route === routeName);
+      const isActive = (route === resolvedRoute);
       const icon = btn.querySelector('svg');
 
       if (isActive) {
@@ -156,15 +211,38 @@ function initApp() {
       }
     });
 
-    if (routeName === 'candidate') initCandidateWizard();
-    if (routeName === 'admin') renderAdminWorkspace();
+    // Update browser URL hash for deep linking & bookmarking
+    if (updateHash) {
+      const targetHash = REVERSE_ROUTE_MAP[resolvedRoute] || resolvedRoute;
+      if (window.location.hash !== `#${targetHash}`) {
+        window.location.hash = targetHash;
+      }
+    }
+
+    if (resolvedRoute === 'candidate') initCandidateWizard();
+    if (resolvedRoute === 'admin') renderAdminWorkspace();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  function handleHashChange() {
+    const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+    const targetRoute = ROUTE_MAP[rawHash] || 'candidate';
+    switchRoute(targetRoute, false);
+  }
+
+  // Global access for programmatic switching
+  window.switchRoute = switchRoute;
 
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      switchRoute(link.getAttribute('data-route'));
+      const r = link.getAttribute('data-route');
+      const targetHash = REVERSE_ROUTE_MAP[r] || r;
+      if (window.location.hash === `#${targetHash}`) {
+        switchRoute(r, false);
+      } else {
+        window.location.hash = targetHash;
+      }
     });
   });
 
@@ -172,18 +250,22 @@ function initApp() {
   function initCandidateWizard() {
     const activeCamp = store.getActiveCampaign();
     const navGen = document.getElementById('nav-active-gen');
-    if (navGen) navGen.textContent = activeCamp.gen || 'Gen XVI';
+    if (navGen) navGen.textContent = activeCamp.gen || 'Gen XVII';
     const heroGenEl = document.getElementById('hero-campaign-gen');
     if (heroGenEl) {
-      heroGenEl.textContent = activeCamp.academicYear ? `CHECK IN ${activeCamp.gen.toUpperCase()} (${activeCamp.academicYear})` : (activeCamp.gen || 'CHECK IN GEN XVI');
+      heroGenEl.textContent = activeCamp.academicYear ? `CHECK IN ${activeCamp.gen.toUpperCase()} (${activeCamp.academicYear})` : (activeCamp.gen || 'CHECK IN GEN XVII');
     }
     const heroNameEl = document.getElementById('hero-campaign-name');
     if (heroNameEl) {
-      heroNameEl.innerHTML = `<span class="text-[#FFF8EB] uppercase">${activeCamp.name}</span>`;
+      heroNameEl.innerHTML = `<span class="title-gold-shimmer">${escapeHtml(activeCamp.name)}</span>`;
     }
     const heroSloganEl = document.getElementById('hero-campaign-slogan');
     if (heroSloganEl) {
-      heroSloganEl.textContent = `"${activeCamp.slogan}"`;
+      heroSloganEl.innerHTML = `<span>✨</span> <span>"${escapeHtml(activeCamp.slogan)}"</span>`;
+    }
+    const heroBgImg = document.getElementById('hero-campaign-bg-img');
+    if (heroBgImg && activeCamp.backgroundImage) {
+      heroBgImg.src = activeCamp.backgroundImage;
     }
 
     // Deadline Display & Lock Wizard
@@ -197,7 +279,7 @@ function initApp() {
       const wizardCard = document.getElementById('candidate-wizard-card');
       const expiredCard = document.getElementById('candidate-expired-card');
       const expiredCampName = document.getElementById('expired-camp-name');
-      if (expiredCampName) expiredCampName.textContent = activeCamp.name || 'FRAMEJUMP';
+      if (expiredCampName) expiredCampName.textContent = activeCamp.name || 'THE WONDER BOUND';
 
       if (isPast) {
         if (badge) {
@@ -266,6 +348,10 @@ function initApp() {
     if (stepNum === 3) renderStep3ParallelTimelines();
     if (stepNum === 4) renderStep4Summary();
   }
+
+  window.goToStep = goToStep;
+  window.wizardState = wizardState;
+  window.toggleDeptSelection = toggleDeptSelection;
 
   // STEP 1 NAVIGATION (STRICT VALIDATION & ANTI-XSS / INJECTION)
   document.getElementById('btn-next-step-1')?.addEventListener('click', () => {
@@ -438,15 +524,17 @@ function initApp() {
       const ivNames = (slot.interviewers || []).map(i => i.fullName).join(', ') || 'Ban Tuyển Quân';
 
       return `
-        <div class="p-4 rounded-2xl border text-xs text-slate-700 space-y-2 bg-orange-50/70 border-orange-200">
-          <div class="flex items-center justify-between font-black">
-            <span class="text-orange-700 uppercase tracking-wider text-[11px]">${slot.dept.name}</span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <div class="p-4 rounded-2xl border text-xs text-amber-950 space-y-2 bg-white/85 backdrop-blur-sm border-amber-300/80 shadow-xs">
+          <div class="flex items-center justify-between font-black flex-wrap gap-1">
+            <span class="text-amber-900 uppercase tracking-wider text-[11px] font-bold">
+              ${slot.dept.name}
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
               ✓ Ca Chính Thức
             </span>
           </div>
 
-          <div class="font-black text-slate-900 text-sm">${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} (Ngày ${dd}/${mm}/${yy})</div>
+          <div class="font-black text-slate-950 text-sm">⏰ ${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} — Ngày ${dd}/${mm}/${yy}</div>
           <div>📍 Địa điểm: <strong>${escapeHtml(slot.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</strong></div>
           <div>📌 Sức chứa: <strong>${slot.capacity} ứng viên / ca</strong></div>
         </div>
@@ -460,21 +548,47 @@ function initApp() {
     }
 
     container.innerHTML = `
-      <div class="p-5 rounded-3xl bg-slate-50 border border-slate-200 space-y-3">
-        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Thông Tin Cá Nhân:</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
-          <div>Họ và tên: <strong class="text-slate-900">${escapeHtml(info.fullName)}</strong></div>
-          <div>Mã sinh viên (MSV): <strong class="text-slate-900">${escapeHtml(info.studentId)}</strong></div>
-          <div>Email: <strong class="text-slate-900">${escapeHtml(info.email)}</strong></div>
-          <div>SĐT: <strong class="text-slate-900">${escapeHtml(info.phone)}</strong></div>
-          ${info.academicClass ? `<div>Lớp: <strong>${escapeHtml(info.academicClass)}</strong></div>` : ''}
-        </div>
-      </div>
+      <div class="golden-ticket-card p-6 sm:p-7 space-y-4">
+        <div class="ticket-notch-left"></div>
+        <div class="ticket-notch-right"></div>
 
-      <div class="space-y-3">
-        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Lịch Phỏng Vấn Đã Chọn:</h4>
-        ${slot1 ? formatSlotDetail(slot1) : ''}
-        ${slot2 ? formatSlotDetail(slot2) : ''}
+        <!-- Ticket Header -->
+        <div class="flex items-center justify-between border-b border-amber-400/60 pb-3 flex-wrap gap-2">
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl">🎫</span>
+            <div>
+              <span class="text-[10px] font-black tracking-widest text-amber-900 uppercase block leading-none">WONKA GOLDEN TICKET</span>
+              <h4 class="font-black text-amber-950 text-base sm:text-lg tracking-tight">TẤM VÉ BƯỚC VÀO VÒNG PHỎNG VẤN</h4>
+            </div>
+          </div>
+          <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-900/15 text-amber-950 border border-amber-800/30">
+            MCC GEN XVII • 2026
+          </span>
+        </div>
+
+        <!-- Personal Info inside Ticket -->
+        <div class="p-4 rounded-2xl bg-white/75 backdrop-blur-sm border border-amber-300/60 space-y-2">
+          <h5 class="font-black text-amber-900 text-[11px] uppercase tracking-wider">Thông Tin Ứng Viên:</h5>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-amber-950">
+            <div>Họ và tên: <strong class="text-slate-950">${escapeHtml(info.fullName)}</strong></div>
+            <div>Mã sinh viên (MSV): <strong class="text-slate-950 font-mono">${escapeHtml(info.studentId)}</strong></div>
+            <div>Email: <strong class="text-slate-950">${escapeHtml(info.email)}</strong></div>
+            <div>SĐT (Zalo): <strong class="text-slate-950">${escapeHtml(info.phone)}</strong></div>
+            ${info.academicClass ? `<div>Lớp / Khóa: <strong class="text-slate-950">${escapeHtml(info.academicClass)}</strong></div>` : ''}
+          </div>
+        </div>
+
+        <!-- Chosen Slots -->
+        <div class="space-y-2.5">
+          <h5 class="font-black text-amber-900 text-[11px] uppercase tracking-wider">Lịch Phỏng Vấn Chính Thức:</h5>
+          ${slot1 ? formatSlotDetail(slot1) : ''}
+          ${slot2 ? formatSlotDetail(slot2) : ''}
+        </div>
+
+        <div class="pt-2 flex items-center justify-between text-[10px] text-amber-900/80 border-t border-amber-400/50 font-medium">
+          <span>✨ "Be the flavor we're missing"</span>
+          <span class="font-mono font-bold tracking-wider">OFFICIAL ADMISSION PASS</span>
+        </div>
       </div>
     `;
   }
@@ -576,19 +690,23 @@ function initApp() {
       const [yy, mm, dd] = (slot?.date || '').split('-');
 
       const item = document.createElement('div');
-      item.className = 'p-4 rounded-2xl border text-xs text-slate-700 space-y-2.5 bg-orange-50 border-orange-200';
+      item.className = 'golden-ticket-card p-4.5 rounded-2xl text-xs text-amber-950 space-y-2.5 border border-amber-400 shadow-sm relative';
       item.innerHTML = `
+        <div class="ticket-notch-left"></div>
+        <div class="ticket-notch-right"></div>
         <div class="flex flex-wrap items-center justify-between font-black gap-2 mb-1">
-          <span class="text-orange-700 uppercase font-bold">${dept.name}</span>
+          <span class="text-amber-900 uppercase font-black tracking-wide">
+            ${dept.name}
+          </span>
           <div class="flex items-center gap-1.5">
-            <span class="font-mono bg-white px-2 py-0.5 rounded-lg border border-orange-200 text-xs">${reg.bookingCode}</span>
-            <button type="button" class="btn-copy-code px-2.5 py-1 text-[11px] font-bold rounded-lg border border-orange-200 bg-white hover:bg-orange-100 text-orange-800 transition-all flex items-center gap-1 cursor-pointer" data-code="${reg.bookingCode}">
+            <span class="font-mono bg-white/90 px-2 py-0.5 rounded-lg border border-amber-300 text-xs font-bold text-amber-950">${reg.bookingCode}</span>
+            <button type="button" class="btn-copy-code px-2.5 py-1 text-[11px] font-bold rounded-lg border border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition-all flex items-center gap-1 cursor-pointer" data-code="${reg.bookingCode}">
               <span>📋</span> <span>Sao chép</span>
             </button>
           </div>
         </div>
-        <div>Thời gian ca phỏng vấn: <strong>${slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime)} (Ngày ${dd}/${mm}/${yy})</strong></div>
-        <div class="text-slate-500">📍 Địa điểm: ${escapeHtml(slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</div>
+        <div>⏰ Thời gian ca phỏng vấn: <strong>${slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime)} (Ngày ${dd}/${mm}/${yy})</strong></div>
+        <div class="text-amber-900/80">📍 Địa điểm: <strong>${escapeHtml(slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</strong></div>
       `;
 
       const copyBtn = item.querySelector('.btn-copy-code');
@@ -1424,7 +1542,7 @@ function initApp() {
       });
       campSelect.value = activeCamp.id;
 
-      // Khi chỉ có 1 mùa tuyển (Gen XVI), khóa selector thành badge cố định đẹp mắt để tránh bấm nhầm
+      // Khi chỉ có 1 mùa tuyển (Gen XVII), khóa selector thành badge cố định đẹp mắt để tránh bấm nhầm
       if (campaigns.length <= 1) {
         campSelect.disabled = true;
         campSelect.className = 'px-3 py-1 text-xs font-black rounded-xl border border-orange-200 bg-orange-100 text-[#8B1E22] cursor-default select-none shadow-xs';
@@ -2854,8 +2972,86 @@ function initApp() {
     }
   });
 
-  // Initial startup
-  initCandidateWizard();
+  // --- 3D INTERACTIVE PARALLAX TILT & THEATRICAL FOLLOW SPOTLIGHT FOR HERO BANNER ---
+  function initHeroParallax() {
+    const banner = document.getElementById('hero-campaign-banner-container');
+    const bgImg = document.getElementById('hero-campaign-bg-img');
+    const content = document.getElementById('hero-content-layer');
+    const medallion = document.getElementById('hero-top-medallion');
+    const spotlight = document.getElementById('hero-theatrical-spotlight');
+
+    if (!banner || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let isHovering = false;
+    let rafId = null;
+
+    banner.addEventListener('mouseenter', () => {
+      isHovering = true;
+      if (bgImg) bgImg.style.transition = 'none';
+      if (content) content.style.transition = 'none';
+      if (medallion) medallion.style.transition = 'none';
+      if (!rafId) rafId = requestAnimationFrame(updateParallax);
+    });
+
+    banner.addEventListener('mousemove', (e) => {
+      const rect = banner.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      targetX = mouseX / rect.width - 0.5; // -0.5 to 0.5
+      targetY = mouseY / rect.height - 0.5;
+
+      if (spotlight) {
+        spotlight.style.background = `radial-gradient(circle 350px at ${mouseX}px ${mouseY}px, rgba(254, 240, 138, 0.22) 0%, rgba(168, 85, 247, 0.1) 45%, transparent 80%)`;
+      }
+
+      if (!rafId) rafId = requestAnimationFrame(updateParallax);
+    });
+
+    banner.addEventListener('mouseleave', () => {
+      isHovering = false;
+      targetX = 0;
+      targetY = 0;
+      const easeReset = 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      if (bgImg) bgImg.style.transition = easeReset;
+      if (content) content.style.transition = easeReset;
+      if (medallion) medallion.style.transition = easeReset;
+      if (bgImg) bgImg.style.transform = '';
+      if (content) content.style.transform = '';
+      if (medallion) medallion.style.transform = '';
+      if (spotlight) spotlight.style.background = '';
+    });
+
+    function updateParallax() {
+      // Smooth Damped Interpolation (LERP factor 0.08)
+      currentX += (targetX - currentX) * 0.08;
+      currentY += (targetY - currentY) * 0.08;
+
+      if (bgImg) {
+        bgImg.style.transform = `scale(1.04) translate(${currentX * -14}px, ${currentY * -10}px)`;
+      }
+      if (content) {
+        content.style.transform = `translate(${currentX * 10}px, ${currentY * 8}px)`;
+      }
+      if (medallion) {
+        medallion.style.transform = `translate(${currentX * 16}px, ${currentY * 10}px) rotateY(${currentX * 14}deg) rotateX(${-currentY * 14}deg) scale(1.02)`;
+      }
+
+      if (isHovering || Math.abs(targetX - currentX) > 0.001 || Math.abs(targetY - currentY) > 0.001) {
+        rafId = requestAnimationFrame(updateParallax);
+      } else {
+        rafId = null;
+      }
+    }
+  }
+
+  // Initialize Hero Interactive Parallax
+  initHeroParallax();
+
+  // Initial startup & Hash Route Listener
+  handleHashChange();
+  window.addEventListener('hashchange', handleHashChange);
 }
 
 if (document.readyState === 'loading') {
