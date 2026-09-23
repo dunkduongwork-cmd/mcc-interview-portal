@@ -97,18 +97,18 @@
   </header>
 
   <!-- MAIN VIEWPORT -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-5">
 
     <!-- ========================================== -->
     <!-- 1. VIEW: CANDIDATE PORTAL (WIZARD 4 STEPS) -->
     <!-- ========================================== -->
-    <section id="view-candidate" class="space-y-6 sm:space-y-8 animate-fade-in">
+    <section id="view-candidate" class="space-y-4 sm:space-y-5 animate-fade-in">
       
       <!-- Unified Hero Banner: Lồng chữ và thông tin trực tiếp vào Background Wonka Wonderland -->
-      <div id="hero-campaign-banner-container" class="relative overflow-hidden rounded-3xl text-white shadow-2xl border border-purple-900/40 bg-[#240833] min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] flex flex-col justify-end p-6 sm:p-10 lg:p-12 group">
+      <div id="hero-campaign-banner-container" class="relative overflow-hidden rounded-3xl text-white shadow-xl border border-purple-900/40 bg-[#240833] min-h-[280px] sm:min-h-[320px] lg:min-h-[350px] flex flex-col justify-end p-5 sm:p-6 lg:p-8 group">
         
-        <!-- Background Artwork with object-top to keep the official 4-logo pill at top-center -->
-        <img id="hero-campaign-bg-img" src="images/wonder-bound-bg.png" alt="THE WONDER BOUND Background" class="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-[1.015] transition-transform duration-1000 ease-out">
+        <!-- Background Artwork with object-[center_42%] to prominently showcase the Wonka Castle & Candy World -->
+        <img id="hero-campaign-bg-img" src="images/wonder-bound-bg.png" alt="THE WONDER BOUND Background" class="absolute inset-0 w-full h-full object-cover object-[center_42%] group-hover:scale-[1.015] transition-transform duration-1000 ease-out">
         
         <!-- Smart Dark Tint & Film Gradient Overlays for High Legibility while Preserving Wonderland Artwork -->
         <div class="absolute inset-0 bg-gradient-to-r from-[#170422]/95 via-[#230833]/70 sm:via-[#230833]/50 to-transparent"></div>
@@ -120,6 +120,9 @@
         <!-- Velvet Curtain Drape Breathing Overlays (Nhịp thở rèm sân khấu kịch nghệ) -->
         <div class="curtain-drape-left"></div>
         <div class="curtain-drape-right"></div>
+
+        <!-- 3D Cosmic Starfield Canvas (Bầu trời sao 3D tương tác Parallax chuẩn Wonka) -->
+        <canvas id="hero-3d-starfield" class="absolute inset-0 w-full h-full pointer-events-none z-10"></canvas>
 
         <!-- Floating Golden Stardust Particles Layer (Bụi vàng ma thuật Wonka) -->
         <div id="hero-stardust-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-10">
@@ -138,14 +141,14 @@
         </div>
 
         <!-- Top Center Official Organization Logos (Cụm 4 Logo 3D Nghệ Thuật: UEB - Đoàn TN - Hội SV - MCC) -->
-        <div class="absolute top-3.5 sm:top-5 inset-x-0 flex justify-center z-20 pointer-events-none">
+        <div class="absolute top-2 sm:top-3 inset-x-0 flex justify-center z-20 pointer-events-none">
           <div id="hero-top-medallion" class="relative inline-flex items-center justify-center pointer-events-auto transition-transform duration-300 hover:scale-105" title="Đơn vị bảo trợ & tổ chức: ĐH Kinh tế UEB • Đoàn Thanh niên • Hội Sinh viên • CLB MCC">
             <!-- 3D Ambient Gold Halo Glow (Quầng hào quang vàng kim hắt ra rèm nhung) -->
-            <div class="absolute -inset-2.5 bg-gradient-to-r from-amber-500/0 via-amber-400/35 to-amber-500/0 blur-md rounded-full pointer-events-none"></div>
+            <div class="absolute -inset-2 bg-gradient-to-r from-amber-500/0 via-amber-400/35 to-amber-500/0 blur-md rounded-full pointer-events-none"></div>
 
             <!-- Floating 3D Medallion Body -->
-            <div class="relative rounded-full overflow-hidden animate-medallion-float filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)] drop-shadow-[0_0_15px_rgba(245,158,11,0.35)]">
-              <img src="images/campaign-logos-pill.png" alt="Logo UEB - Đoàn TN - Hội SV - CLB MCC" class="h-10 sm:h-12 md:h-14 w-auto object-contain brightness-105 contrast-105">
+            <div class="relative rounded-full overflow-hidden animate-medallion-float filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.85)] drop-shadow-[0_0_12px_rgba(245,158,11,0.35)]">
+              <img src="images/campaign-logos-pill.png" alt="Logo UEB - Đoàn TN - Hội SV - CLB MCC" class="h-7 sm:h-8 md:h-9 w-auto object-contain brightness-105 contrast-105">
               
               <!-- Shimmer Gleam (Vệt sáng kim loại quét chéo định kỳ) -->
               <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/35 to-transparent animate-shimmer-sweep pointer-events-none"></div>
@@ -155,39 +158,39 @@
             </div>
 
             <!-- Magical Wonka Sparkle Accent (Đốm sao 4 cánh lấp lánh tại mép viền vàng) -->
-            <span class="absolute -top-1.5 -right-2 text-amber-300 text-xs sm:text-sm font-black drop-shadow-[0_0_8px_rgba(250,204,21,0.9)] animate-sparkle-twinkle select-none pointer-events-none">✦</span>
+            <span class="absolute -top-1.5 -right-2 text-amber-300 text-xs font-black drop-shadow-[0_0_8px_rgba(250,204,21,0.9)] animate-sparkle-twinkle select-none pointer-events-none">✦</span>
           </div>
         </div>
 
         <!-- Hero Content Layer (Lồng chữ & các thông tin điều hành) -->
-        <div id="hero-content-layer" class="relative z-10 max-w-2xl space-y-4">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-white/20 border border-white/25 text-amber-200 backdrop-blur-md shadow-xs">
-              <span class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></span>
+        <div id="hero-content-layer" class="relative z-10 max-w-2xl space-y-1.5 sm:space-y-2">
+          <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-white/20 border border-white/25 text-amber-200 backdrop-blur-md shadow-xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse"></span>
               MEDIA AND COMMUNICATION CLUB
             </span>
-            <span id="hero-campaign-gen" class="text-xs font-black px-3.5 py-1 rounded-full bg-black/45 text-amber-100 border border-amber-300/30 tracking-wide uppercase backdrop-blur-md shadow-xs">
+            <span id="hero-campaign-gen" class="text-[9px] sm:text-[10px] font-black px-2.5 py-0.5 rounded-full bg-black/45 text-amber-100 border border-amber-300/30 tracking-wide uppercase backdrop-blur-md shadow-xs">
               CHECK IN GEN XVII (2026 – 2027)
             </span>
           </div>
 
-          <div class="space-y-1">
-            <h1 id="hero-campaign-name" class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight uppercase drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]">
+          <div class="space-y-0.5">
+            <h1 id="hero-campaign-name" class="text-2xl sm:text-3xl lg:text-[38px] font-black tracking-tight leading-tight uppercase drop-shadow-[0_3px_12px_rgba(0,0,0,0.8)]">
               <span class="title-gold-shimmer">THE WONDER BOUND</span>
             </h1>
           </div>
 
-          <p id="hero-campaign-slogan" class="text-amber-200 font-extrabold text-xs sm:text-sm lg:text-base tracking-widest uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] flex items-center gap-2">
+          <p id="hero-campaign-slogan" class="text-amber-200 font-extrabold text-[11px] sm:text-xs lg:text-sm tracking-wider uppercase drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)] flex items-center gap-1.5">
             <span>✨</span> <span>"BE THE FLAVOR WE'RE MISSING"</span>
           </p>
 
           <!-- Deadline Notice Banner (Glassmorphism Pill) -->
-          <div id="hero-deadline-box" class="p-3.5 px-4.5 rounded-2xl bg-black/55 border border-white/20 backdrop-blur-md inline-flex flex-wrap items-center gap-3 text-xs shadow-xl mt-2">
-            <div class="flex items-center gap-2 text-amber-50">
-              <span class="text-base">⏰</span>
+          <div id="hero-deadline-box" class="py-1 px-3 rounded-xl bg-black/55 border border-white/20 backdrop-blur-md inline-flex flex-wrap items-center gap-2 text-xs shadow-md mt-0.5">
+            <div class="flex items-center gap-1.5 text-amber-50 text-[11px] sm:text-xs">
+              <span class="text-sm">⏰</span>
               <span>Hạn chót đăng ký & đổi ca: <strong id="hero-deadline-text" class="text-amber-300 font-bold font-mono">--/--/----</strong></span>
             </div>
-            <span id="hero-deadline-badge" class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs whitespace-nowrap flex items-center gap-1.5">
+            <span id="hero-deadline-badge" class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-emerald-500 text-white shadow-xs whitespace-nowrap flex items-center gap-1">
               <span class="relative flex h-1.5 w-1.5">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
@@ -241,10 +244,10 @@
       </div>
 
       <!-- Registration Wizard Card -->
-      <div id="candidate-wizard-card" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-8">
+      <div id="candidate-wizard-card" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-5 sm:space-y-6">
         
         <!-- Step Progress Indicator -->
-        <div class="border-b border-slate-100 pb-6 relative">
+        <div class="border-b border-slate-100 pb-4 relative">
           <div class="flex items-center justify-between max-w-2xl mx-auto relative">
             
             <div class="step-indicator flex items-center gap-2 text-orange-600 font-bold text-xs" data-step="1">
@@ -274,7 +277,7 @@
         </div>
 
         <!-- Wizard Step Form -->
-        <form id="wizard-form" novalidate class="space-y-6 sm:space-y-8">
+        <form id="wizard-form" novalidate class="space-y-5 sm:space-y-6">
           
           <!-- STEP 1: Personal Info -->
           <div id="step-1-content" class="wizard-step-pane space-y-5">
@@ -408,7 +411,7 @@
           <div id="step-4-content" class="wizard-step-pane hidden space-y-6">
             <div>
               <h3 class="text-lg sm:text-xl font-black text-slate-900">Bước 4: Xác nhận đăng ký ca phỏng vấn</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Kiểm tra lại toàn bộ thông tin đăng ký của bạn trước khi hệ thống cấp mã đơn chính thức</p>
+              <p class="text-xs text-slate-500 mt-0.5">Kiểm tra lại toàn bộ thông tin đăng ký của bạn trước khi hoàn tất đăng ký ca phỏng vấn</p>
             </div>
 
             <!-- Summary Box -->
@@ -565,7 +568,7 @@
 
       <!-- B. ADMIN DASHBOARD VIEW (ERP Sidebar Layout) -->
       <div id="admin-dashboard-view" class="hidden animate-fade-in">
-        <div class="flex flex-col lg:flex-row items-start gap-6">
+        <div class="flex flex-col lg:flex-row items-start gap-6 w-full min-w-0">
           
           <!-- LEFT SIDEBAR NAVIGATION -->
           <aside class="w-full lg:w-72 shrink-0 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 space-y-4 lg:sticky lg:top-20">
@@ -642,7 +645,7 @@
           </aside>
 
           <!-- RIGHT MAIN CONTENT PANE -->
-          <main class="flex-1 w-full space-y-6">
+          <main class="flex-1 min-w-0 w-full space-y-6">
             <!-- Top Action Header & Campaign Selector -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
               <div class="flex items-center gap-3">
@@ -663,29 +666,31 @@
             <div id="admin-pane-slots" class="admin-tab-pane hidden space-y-6 animate-fade-in">
               <!-- DEADLINE SETTINGS BANNER (Exclusive for Ban Chủ Nhiệm inside Slots Management) -->
               <div id="admin-deadline-card-box" class="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 rounded-3xl border border-amber-200/90 p-5 sm:p-6 shadow-sm space-y-4">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div class="flex items-start gap-3">
-                    <span class="p-2.5 rounded-2xl bg-amber-500 text-white text-lg shadow-sm">⏰</span>
-                    <div>
-                      <h3 class="font-black text-slate-900 text-sm sm:text-base">Deadline ứng viên đăng ký & đổi ca</h3>
-                      <p class="text-xs text-slate-600 font-medium mt-0.5">Sau thời điểm này, toàn bộ ứng viên sẽ bị khóa tính năng chọn ca và đổi ca.</p>
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                  <div class="flex items-start gap-2.5 min-w-0 max-w-sm lg:max-w-md">
+                    <span class="p-2 rounded-2xl bg-amber-500 text-white text-base shadow-sm shrink-0">⏰</span>
+                    <div class="min-w-0">
+                      <h3 class="font-black text-slate-900 text-sm sm:text-base">Deadline ứng viên đăng ký &amp; đổi ca</h3>
+                      <p class="text-xs text-slate-600 font-medium mt-0.5 leading-snug">Sau thời điểm này, toàn bộ ứng viên sẽ bị khóa tính năng chọn ca và đổi ca.</p>
                     </div>
                   </div>
 
-                  <form id="form-update-deadline" class="flex flex-wrap items-center gap-2.5">
+                  <form id="form-update-deadline" class="flex items-center gap-2 shrink-0 flex-wrap">
                     <!-- Date Pill -->
                     <div class="deadline-pill">
                       <span class="text-xs text-slate-500 font-bold select-none">📅 Ngày:</span>
                       <input type="date" id="admin-deadline-date" required>
                     </div>
 
-                    <!-- Time Pill -->
-                    <div class="deadline-pill">
+                    <!-- Time Pill (Nhập Giờ 24h: HH:mm, KHÔNG AM/PM) -->
+                    <div class="deadline-pill shrink-0" title="Nhập giờ chuẩn 24h: HH:mm (ví dụ 23:59)">
                       <span class="text-xs text-slate-500 font-bold select-none">⏰ Giờ:</span>
-                      <input type="time" id="admin-deadline-time" required>
+                      <input type="text" id="admin-deadline-time" value="23:59" maxlength="5" placeholder="23:59"
+                        class="w-14 font-mono font-bold text-xs text-slate-900 bg-transparent outline-none cursor-text text-center"
+                        pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$" autocomplete="off" required>
                     </div>
 
-                    <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-[#8B1E22] to-[#A6282E] hover:from-[#721418] hover:to-[#8B1E22] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0">
                       <span>💾 Lưu Hạn Chót</span>
                     </button>
                   </form>
@@ -738,6 +743,11 @@
                       </button>
                       
                       <div id="slot-actions-menu" class="hidden absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 border border-slate-100 py-1.5 z-30 animate-fade-in text-xs divide-y divide-slate-100">
+                        <div class="py-1 hidden" id="menu-seed-container">
+                          <button type="button" id="menu-btn-seed-test-data" class="w-full text-left px-4 py-2 hover:bg-amber-50 text-amber-700 font-bold flex items-center gap-2 transition-colors">
+                            <span>⚡</span> Nạp 30 ứng viên mẫu (6 ban)
+                          </button>
+                        </div>
                         <div class="py-1">
                           <button type="button" id="btn-action-open-selected" class="w-full text-left px-4 py-2 hover:bg-emerald-50 text-emerald-700 font-bold flex items-center gap-2 transition-colors">
                             <span>🔓</span> Mở các ca đã chọn
@@ -799,8 +809,8 @@
                     <p id="admin-cand-count" class="text-xs text-slate-500">Hiển thị 0 bản ghi đăng ký</p>
                   </div>
 
-                  <div class="flex flex-wrap gap-2">
-                    <input type="text" id="admin-cand-search" placeholder="Tìm tên, MSV, mã đơn..." 
+                  <div class="flex flex-wrap gap-2 items-center">
+                    <input type="text" id="admin-cand-search" placeholder="Tìm tên, MSV, ban..." 
                       class="px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none w-48">
 
                     <select id="admin-cand-filter-dept" class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none cursor-pointer">
@@ -813,7 +823,7 @@
                   <table class="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-500 tracking-wider whitespace-nowrap">
-                        <th class="px-4 py-3 whitespace-nowrap">Mã đơn</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Mã sinh viên</th>
                         <th class="px-4 py-3 whitespace-nowrap">Ứng viên</th>
                         <th class="px-4 py-3 whitespace-nowrap">Ban</th>
                         <th class="px-4 py-3 whitespace-nowrap">Ca phỏng vấn</th>
@@ -872,8 +882,8 @@
                   <table class="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-500 tracking-wider whitespace-nowrap">
-                        <th class="px-4 py-3 whitespace-nowrap">Mã đơn</th>
-                        <th class="px-4 py-3 whitespace-nowrap">Họ tên & MSV</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Mã sinh viên</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Họ và tên</th>
                         <th class="px-4 py-3 whitespace-nowrap">Ban ứng tuyển</th>
                         <th class="px-4 py-3 whitespace-nowrap">Ca phỏng vấn</th>
                         <th class="px-4 py-3 whitespace-nowrap">SĐT liên hệ</th>
@@ -1024,22 +1034,10 @@
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 text-center animate-fade-in border border-slate-200 shadow-2xl relative overflow-hidden">
       <img src="images/mcc-logo.png" alt="MCC Logo" class="w-20 h-20 object-contain mx-auto drop-shadow-xs">
       
-      <!-- Official Club Stamp Seal -->
-      <div class="py-1">
-        <div id="success-modal-stamp" class="animate-stamp inline-flex flex-col items-center justify-center px-4 py-2 rounded-2xl border-2 border-dashed border-[#8B1E22] bg-red-50/80 text-[#8B1E22] shadow-sm select-none">
-          <div class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
-            <span>★</span>
-            <span>MCC.UEB — ĐÃ TIẾP NHẬN</span>
-            <span>★</span>
-          </div>
-          <div class="text-[9px] font-bold text-red-700/80 tracking-widest uppercase">XÁC NHẬN HỒ SƠ ỨNG TUYỂN</div>
-        </div>
-      </div>
-
       <div>
         <span id="success-modal-badge" class="text-[10px] font-black uppercase tracking-wider text-orange-600">Đăng Ký Thành Công</span>
         <h3 id="success-modal-title" class="text-2xl font-black text-slate-900 mt-1">Hẹn Gặp Bạn Tại Buổi Phỏng Vấn!</h3>
-        <p id="success-modal-subtitle" class="text-xs text-slate-500 mt-1">Hãy lưu lại mã đơn hoặc dùng MSV + Email để tra cứu / đổi ca khi cần.</p>
+        <p id="success-modal-subtitle" class="text-xs text-slate-500 mt-1">Dùng Mã sinh viên (MSV) + Email để tra cứu hoặc đổi ca khi cần.</p>
       </div>
 
       <div id="success-registrations-list" class="space-y-2.5 text-left">
@@ -1161,8 +1159,8 @@
       </div>
 
       <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-        <div>Mã đơn: <strong id="override-code" class="font-mono text-orange-700">-</strong></div>
-        <div>Ứng viên: <strong id="override-name">-</strong> (MSV: <span id="override-mssv">-</span>)</div>
+        <div>Mã sinh viên (MSV): <strong id="override-mssv" class="font-mono text-orange-700 font-bold">-</strong><span id="override-code" class="hidden"></span></div>
+        <div>Ứng viên: <strong id="override-name">-</strong></div>
         <div>Ban: <strong id="override-dept">-</strong> • Ca hiện tại: <span id="override-current-slot">-</span></div>
       </div>
 

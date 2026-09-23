@@ -222,19 +222,16 @@ window.UI = {
         <div>
           <span class="text-[10px] font-black uppercase tracking-wider text-[#C23B22]">${dept?.name || 'Ban Chuyên Môn'}</span>
           <div class="flex flex-wrap items-center gap-2 mt-1">
-            <span class="font-mono font-black text-stone-900 text-base bg-stone-100 px-2 py-0.5 rounded-lg">${reg.bookingCode}</span>
-            <button type="button" class="btn-copy-code px-2.5 py-1 text-[11px] font-bold rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 transition-all flex items-center gap-1 cursor-pointer" data-code="${reg.bookingCode}">
-              <span>📋</span> <span>Sao chép</span>
-            </button>
+            <span class="font-black text-stone-900 text-base">${dept?.name || 'Nguyện vọng ứng tuyển'}</span>
             ${checkInBadge}
           </div>
         </div>
         <div class="flex gap-2">
           ${!isAfterDeadline ? `
-            <button class="btn-reg-reschedule px-3.5 py-1.5 text-xs font-bold rounded-xl bg-stone-100 text-stone-800 hover:bg-[#C23B22] hover:text-white transition-all">
+            <button class="btn-reg-reschedule px-3.5 py-1.5 text-xs font-bold rounded-xl bg-stone-100 text-stone-800 hover:bg-[#C23B22] hover:text-white transition-all cursor-pointer">
               Đổi ca khác
             </button>
-            <button class="btn-reg-cancel px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white transition-all">
+            <button class="btn-reg-cancel px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white transition-all cursor-pointer">
               Hủy ca
             </button>
           ` : `
@@ -246,7 +243,7 @@ window.UI = {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-stone-700">
         <div class="p-4 rounded-2xl bg-stone-50 border border-stone-100">
           <div class="font-bold text-stone-400 uppercase text-[10px] mb-1 tracking-wider">THỜI GIAN & ĐỊA ĐIỂM</div>
-          <div class="font-black text-stone-900 text-sm mb-1">${slot?.startTime} - ${slot?.endTime} (Ngày ${dd}/${mm}/${yy})</div>
+          <div class="font-black text-stone-900 text-sm mb-1">${slot?.shiftLabel || (slot?.startTime + ' – ' + slot?.endTime)} (Ngày ${dd}/${mm}/${yy})</div>
           <div class="text-stone-600 font-medium">📍 ${slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy'}</div>
         </div>
 
@@ -261,24 +258,6 @@ window.UI = {
     if (!isAfterDeadline) {
       card.querySelector('.btn-reg-reschedule')?.addEventListener('click', () => onReschedule(reg));
       card.querySelector('.btn-reg-cancel')?.addEventListener('click', () => onCancel(reg));
-    }
-
-    const copyBtn = card.querySelector('.btn-copy-code');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        try {
-          await navigator.clipboard.writeText(reg.bookingCode);
-          copyBtn.classList.add('copied');
-          copyBtn.innerHTML = '<span>✓</span> <span>Đã sao chép!</span>';
-          setTimeout(() => {
-            copyBtn.classList.remove('copied');
-            copyBtn.innerHTML = '<span>📋</span> <span>Sao chép</span>';
-          }, 2000);
-        } catch (err) {
-          window.UI.showToast(`Mã đơn: ${reg.bookingCode}`, 'info');
-        }
-      });
     }
 
     return card;

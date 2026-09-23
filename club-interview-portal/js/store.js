@@ -89,9 +89,462 @@ const generate50Slots = () => {
   return slots;
 };
 
+const generateMockCandidatesAndRegistrations = (slots) => {
+  const campId = 'camp-gen17';
+  const targetSlots = slots || INITIAL_SLOTS;
+
+  // Group slots by department
+  const slotsByDept = {
+    media: targetSlots.filter(s => s.departmentId === 'media'),
+    projects: targetSlots.filter(s => s.departmentId === 'projects'),
+    tech: targetSlots.filter(s => s.departmentId === 'tech'),
+    relations: targetSlots.filter(s => s.departmentId === 'relations'),
+    events: targetSlots.filter(s => s.departmentId === 'events'),
+    hr: targetSlots.filter(s => s.departmentId === 'hr')
+  };
+
+  const rawCandidateList = [
+    // --- 1. BAN TRUYỀN THÔNG (4 đơn NV1) ---
+    {
+      id: 'cand-mock-1',
+      fullName: 'Nguyễn Minh Châu',
+      studentId: '24050101',
+      email: 'minhchau.ueb@gmail.com',
+      phone: '0987111001',
+      academicClass: 'QH-2024-E QTKD 1',
+      dept1: 'media',
+      status1: 'checked-in',
+      score1: 9.0,
+      note1: 'Tư duy visual và storytelling xuất sắc, thành thạo Premiere & CapCut, có gu thẩm mỹ rất phù hợp với Gen XVII.'
+    },
+    {
+      id: 'cand-mock-2',
+      fullName: 'Trần Đức Hoàng',
+      studentId: '24050102',
+      email: 'duchoang.ueb@gmail.com',
+      phone: '0987111002',
+      academicClass: 'QH-2024-E KTQT 2',
+      dept1: 'media',
+      status1: 'checked-in',
+      score1: 8.2,
+      note1: 'Kỹ năng viết content linh hoạt, nắm bắt trend TikTok/Reels nhanh, năng động nhiệt huyết.'
+    },
+    {
+      id: 'cand-mock-3',
+      fullName: 'Lê Phương Thảo',
+      studentId: '23050103',
+      email: 'phuongthao.ueb@gmail.com',
+      phone: '0987111003',
+      academicClass: 'QH-2023-E TCNH 1',
+      dept1: 'media',
+      status1: 'pending'
+    },
+    {
+      id: 'cand-mock-4',
+      fullName: 'Vũ Quang Huy',
+      studentId: '24050104',
+      email: 'quanghuy.ueb@gmail.com',
+      phone: '0987111004',
+      academicClass: 'QH-2024-E KT&KDQT',
+      dept1: 'media',
+      status1: 'pending'
+    },
+
+    // --- 2. BAN DỰ ÁN (4 đơn NV1) ---
+    {
+      id: 'cand-mock-5',
+      fullName: 'Phạm Hoàng Long',
+      studentId: '23050201',
+      email: 'hoanglong.ueb@gmail.com',
+      phone: '0987112001',
+      academicClass: 'QH-2023-E QTKD 2',
+      dept1: 'projects',
+      status1: 'checked-in',
+      score1: 8.8,
+      note1: 'Tư duy logic tốt, có kinh nghiệm lập kế hoạch dự án, phân tích rủi ro và quản trị tiến độ chặt chẽ.'
+    },
+    {
+      id: 'cand-mock-6',
+      fullName: 'Đỗ Mai Linh',
+      studentId: '24050202',
+      email: 'mailinh.ueb@gmail.com',
+      phone: '0987112002',
+      academicClass: 'QH-2024-E Kinh tế',
+      dept1: 'projects',
+      status1: 'checked-in',
+      score1: 8.5,
+      note1: 'Thuyết trình tự tin, khả năng phản biện sắc sảo, kỹ năng làm việc nhóm và điều phối tốt.'
+    },
+    {
+      id: 'cand-mock-7',
+      fullName: 'Hoàng Bảo Ngọc',
+      studentId: '24050203',
+      email: 'baongoc.ueb@gmail.com',
+      phone: '0987112003',
+      academicClass: 'QH-2024-E KTPT 1',
+      dept1: 'projects',
+      status1: 'pending'
+    },
+    {
+      id: 'cand-mock-8',
+      fullName: 'Bùi Tuấn Anh',
+      studentId: '23050204',
+      email: 'buituananh.ueb@gmail.com',
+      phone: '0987112004',
+      academicClass: 'QH-2023-E KTQT 1',
+      dept1: 'projects',
+      status1: 'pending'
+    },
+
+    // --- 3. BAN KỸ THUẬT (4 đơn NV1) ---
+    {
+      id: 'cand-mock-9',
+      fullName: 'Đặng Minh Quân',
+      studentId: '24050301',
+      email: 'minhquan.ueb@gmail.com',
+      phone: '0987113001',
+      academicClass: 'QH-2024-E HTTTQL',
+      dept1: 'tech',
+      status1: 'checked-in',
+      score1: 9.2,
+      note1: 'Nắm vững HTML/CSS/JS, có kinh nghiệm làm web và quản trị hệ thống, xử lý tình huống kỹ thuật nhanh nhạy.'
+    },
+    {
+      id: 'cand-mock-10',
+      fullName: 'Phan Khánh Huyền',
+      studentId: '24050302',
+      email: 'khanhhuyen.ueb@gmail.com',
+      phone: '0987113002',
+      academicClass: 'QH-2024-E TCNH 2',
+      dept1: 'tech',
+      status1: 'checked-in',
+      score1: 8.6,
+      note1: 'Hiểu biết về setup âm thanh, ánh sáng và livestream sự kiện, thái độ học hỏi và làm việc rất nghiêm túc.'
+    },
+    {
+      id: 'cand-mock-11',
+      fullName: 'Ngô Đình Trọng',
+      studentId: '23050303',
+      email: 'dinhtrong.ueb@gmail.com',
+      phone: '0987113003',
+      academicClass: 'QH-2023-E Kinh tế số',
+      dept1: 'tech',
+      status1: 'pending'
+    },
+    {
+      id: 'cand-mock-12',
+      fullName: 'Trịnh Hoài Nam',
+      studentId: '24050304',
+      email: 'hoainam.ueb@gmail.com',
+      phone: '0987113004',
+      academicClass: 'QH-2024-E QTKD 3',
+      dept1: 'tech',
+      status1: 'pending'
+    },
+
+    // --- 4. BAN ĐỐI NGOẠI (4 đơn NV1) ---
+    {
+      id: 'cand-mock-13',
+      fullName: 'Dương Thu Trang',
+      studentId: '24050401',
+      email: 'thutrang.ueb@gmail.com',
+      phone: '0987114001',
+      academicClass: 'QH-2024-E KTQT 3',
+      dept1: 'relations',
+      status1: 'checked-in',
+      score1: 9.0,
+      note1: 'Kỹ năng đàm phán và giao tiếp tự tin, phong thái chuyên nghiệp, tiếng Anh lưu loát, tác phong ngoại giao chuẩn mực.'
+    },
+    {
+      id: 'cand-mock-14',
+      fullName: 'Lâm Gia Bảo',
+      studentId: '23050402',
+      email: 'giabao.ueb@gmail.com',
+      phone: '0987114002',
+      academicClass: 'QH-2023-E QTKD 1',
+      dept1: 'relations',
+      status1: 'checked-in',
+      score1: 8.4,
+      note1: 'Năng động, có network tốt, kỹ năng soạn thảo proposal tài trợ và email đối tác chỉn chu.'
+    },
+    {
+      id: 'cand-mock-15',
+      fullName: 'Vũ Thảo My',
+      studentId: '24050403',
+      email: 'thaomy.ueb@gmail.com',
+      phone: '0987114003',
+      academicClass: 'QH-2024-E TCNH 1',
+      dept1: 'relations',
+      status1: 'pending'
+    },
+    {
+      id: 'cand-mock-16',
+      fullName: 'Nguyễn Hải Đăng',
+      studentId: '24050404',
+      email: 'haidang.ueb@gmail.com',
+      phone: '0987114004',
+      academicClass: 'QH-2024-E KTPT 2',
+      dept1: 'relations',
+      status1: 'pending'
+    },
+
+    // --- 5. BAN SỰ KIỆN (4 đơn NV1) ---
+    {
+      id: 'cand-mock-17',
+      fullName: 'Tạ Phương Uyên',
+      studentId: '24050501',
+      email: 'phuonguyen.ueb@gmail.com',
+      phone: '0987115001',
+      academicClass: 'QH-2024-E Kinh tế',
+      dept1: 'events',
+      status1: 'checked-in',
+      score1: 8.9,
+      note1: 'Kỹ năng điều phối sân khấu và timeline sự kiện rất tốt, phản ứng nhanh với sự cố, năng lượng tích cực.'
+    },
+    {
+      id: 'cand-mock-18',
+      fullName: 'Đoàn Quốc Trung',
+      studentId: '23050502',
+      email: 'quoctrung.ueb@gmail.com',
+      phone: '0987115002',
+      academicClass: 'QH-2023-E QTKD 2',
+      dept1: 'events',
+      status1: 'checked-in',
+      score1: 8.5,
+      note1: 'Nhiều ý tưởng sáng tạo cho format chương trình, nhiệt tình, có trách nhiệm cao với công việc.'
+    },
+    {
+      id: 'cand-mock-19',
+      fullName: 'Chu Hà My',
+      studentId: '24050503',
+      email: 'chuhamy.ueb@gmail.com',
+      phone: '0987115003',
+      academicClass: 'QH-2024-E KT&KDQT',
+      dept1: 'events',
+      status1: 'pending'
+    },
+    {
+      id: 'cand-mock-20',
+      fullName: 'Mai Văn Hưng',
+      studentId: '24050504',
+      email: 'vanhung.ueb@gmail.com',
+      phone: '0987115004',
+      academicClass: 'QH-2024-E TCNH 3',
+      dept1: 'events',
+      status1: 'pending'
+    },
+
+    // --- 6. BAN NHÂN SỰ (4 đơn NV1) ---
+    {
+      id: 'cand-mock-21',
+      fullName: 'Đinh Ngọc Ánh',
+      studentId: '24050601',
+      email: 'ngocanh.ueb@gmail.com',
+      phone: '0987116001',
+      academicClass: 'QH-2024-E QTKD 1',
+      dept1: 'hr',
+      status1: 'checked-in',
+      score1: 9.1,
+      note1: 'Khả năng lắng nghe và gắn kết thành viên xuất sắc, chỉn chu, có tư duy quản trị nhân sự và văn hóa câu lạc bộ.'
+    },
+    {
+      id: 'cand-mock-22',
+      fullName: 'Trịnh Thành Đạt',
+      studentId: '23050602',
+      email: 'thanhdat.ueb@gmail.com',
+      phone: '0987116002',
+      academicClass: 'QH-2023-E TCNH 2',
+      dept1: 'hr',
+      status1: 'checked-in',
+      score1: 8.3,
+      note1: 'Tác phong nhanh nhẹn, quản lý hồ sơ và dữ liệu cẩn thận, tinh thần đồng đội cao.'
+    },
+    {
+      id: 'cand-mock-23',
+      fullName: 'Hồ Thúy Hằng',
+      studentId: '24050603',
+      email: 'thuyhang.ueb@gmail.com',
+      phone: '0987116003',
+      academicClass: 'QH-2024-E KTPT 1',
+      dept1: 'hr',
+      status1: 'pending'
+    },
+    {
+      id: 'cand-mock-24',
+      fullName: 'Nguyễn Việt Cường',
+      studentId: '24050604',
+      email: 'vietcuong.ueb@gmail.com',
+      phone: '0987116004',
+      academicClass: 'QH-2024-E Kinh tế số',
+      dept1: 'hr',
+      status1: 'pending'
+    },
+
+    // --- 7. ĐĂNG KÝ 2 NGUYỆN VỌNG (NV1 & NV2 CÂN ĐỐI 6 BAN) ---
+    {
+      id: 'cand-mock-25',
+      fullName: 'Đào Minh Trí',
+      studentId: '24050701',
+      email: 'minhtri.ueb@gmail.com',
+      phone: '0987117001',
+      academicClass: 'QH-2024-E QTKD 2',
+      dept1: 'media',
+      status1: 'pending',
+      dept2: 'events',
+      status2: 'pending'
+    },
+    {
+      id: 'cand-mock-26',
+      fullName: 'Quách Hương Giang',
+      studentId: '24050702',
+      email: 'huonggiang.ueb@gmail.com',
+      phone: '0987117002',
+      academicClass: 'QH-2024-E KTQT 1',
+      dept1: 'projects',
+      status1: 'pending',
+      dept2: 'tech',
+      status2: 'pending'
+    },
+    {
+      id: 'cand-mock-27',
+      fullName: 'Lương Tuấn Phong',
+      studentId: '24050703',
+      email: 'tuanphong.ueb@gmail.com',
+      phone: '0987117003',
+      academicClass: 'QH-2024-E TCNH 1',
+      dept1: 'relations',
+      status1: 'pending',
+      dept2: 'hr',
+      status2: 'pending'
+    },
+    {
+      id: 'cand-mock-28',
+      fullName: 'Cao Thùy Dương',
+      studentId: '24050704',
+      email: 'thuyduong.ueb@gmail.com',
+      phone: '0987117004',
+      academicClass: 'QH-2024-E Kinh tế 2',
+      dept1: 'events',
+      status1: 'absent',
+      note1: 'Ứng viên báo bận lịch thi học phần đột xuất, xin dời ca.',
+      dept2: 'media',
+      status2: 'absent'
+    },
+    {
+      id: 'cand-mock-29',
+      fullName: 'Vũ Đình Khôi',
+      studentId: '24050705',
+      email: 'dinhkhoi.ueb@gmail.com',
+      phone: '0987117005',
+      academicClass: 'QH-2024-E HTTTQL',
+      dept1: 'tech',
+      status1: 'absent',
+      note1: 'Trùng lịch thực tập doanh nghiệp, hẹn liên hệ ban tổ chức.',
+      dept2: 'projects',
+      status2: 'absent'
+    },
+    {
+      id: 'cand-mock-30',
+      fullName: 'Trần Khánh Linh',
+      studentId: '24050706',
+      email: 'khanhlinh.ueb@gmail.com',
+      phone: '0987117006',
+      academicClass: 'QH-2024-E KTPT 2',
+      dept1: 'hr',
+      status1: 'absent',
+      note1: 'Vắng mặt không lý do.',
+      dept2: 'relations',
+      status2: 'absent'
+    }
+  ];
+
+  const candidates = [];
+  const registrations = [];
+  const deptRegCounter = { media: 0, projects: 0, tech: 0, relations: 0, events: 0, hr: 0 };
+
+  const deptShortMap = {
+    media: 'TT',
+    projects: 'DA',
+    tech: 'KT',
+    relations: 'DN',
+    events: 'SK',
+    hr: 'NS'
+  };
+
+  rawCandidateList.forEach((raw, idx) => {
+    const createdAt = new Date(Date.now() - (30 - idx) * 3600000 * 2).toISOString();
+    
+    candidates.push({
+      id: raw.id,
+      campaignId: campId,
+      fullName: raw.fullName,
+      studentId: raw.studentId,
+      email: raw.email,
+      phone: raw.phone,
+      academicClass: raw.academicClass,
+      createdAt: createdAt
+    });
+
+    // Registration 1 (NV1)
+    const dept1 = raw.dept1;
+    const sList1 = slotsByDept[dept1] || [];
+    const slotIdx1 = Math.floor(deptRegCounter[dept1] / 2) % (sList1.length || 1);
+    const slot1 = sList1[slotIdx1] || { id: `slot-${dept1}-1` };
+    deptRegCounter[dept1]++;
+
+    const reg1 = {
+      id: `reg-mock-${idx + 1}-1`,
+      candidateId: raw.id,
+      campaignId: campId,
+      departmentId: dept1,
+      slotId: slot1.id,
+      bookingCode: `MCC-${1000 + idx * 2 + 1}-${deptShortMap[dept1]}`,
+      checkInStatus: (raw.status1 === 'attended' || raw.status1 === 'checked-in') ? 'checked-in' : (raw.status1 || 'pending'),
+      status: 'confirmed',
+      registeredAt: createdAt,
+      evaluation: raw.score1 ? {
+        interviewerName: 'Ban Giám Khảo',
+        score: raw.score1,
+        note: raw.note1 || ''
+      } : (raw.note1 ? { interviewerName: 'Ban Giám Khảo', score: 0, note: raw.note1 } : null)
+    };
+    registrations.push(reg1);
+
+    // Registration 2 (NV2 if present)
+    if (raw.dept2) {
+      const dept2 = raw.dept2;
+      const sList2 = slotsByDept[dept2] || [];
+      const slotIdx2 = Math.floor(deptRegCounter[dept2] / 2) % (sList2.length || 1);
+      const slot2 = sList2[slotIdx2] || { id: `slot-${dept2}-2` };
+      deptRegCounter[dept2]++;
+
+      const reg2 = {
+        id: `reg-mock-${idx + 1}-2`,
+        candidateId: raw.id,
+        campaignId: campId,
+        departmentId: dept2,
+        slotId: slot2.id,
+        bookingCode: `MCC-${1000 + idx * 2 + 2}-${deptShortMap[dept2]}`,
+        checkInStatus: (raw.status2 === 'attended' || raw.status2 === 'checked-in') ? 'checked-in' : (raw.status2 || 'pending'),
+        status: 'confirmed',
+        registeredAt: createdAt,
+        evaluation: raw.score2 ? {
+          interviewerName: 'Ban Giám Khảo',
+          score: raw.score2,
+          note: raw.note2 || ''
+        } : (raw.note2 ? { interviewerName: 'Ban Giám Khảo', score: 0, note: raw.note2 } : null)
+      };
+      registrations.push(reg2);
+    }
+  });
+
+  return { candidates, registrations };
+};
+
 const INITIAL_SLOTS = generate50Slots();
-const INITIAL_CANDIDATES = [];
-const INITIAL_REGISTRATIONS = [];
+const MOCK_INITIAL_DATA = generateMockCandidatesAndRegistrations(INITIAL_SLOTS);
+const INITIAL_CANDIDATES = MOCK_INITIAL_DATA.candidates;
+const INITIAL_REGISTRATIONS = MOCK_INITIAL_DATA.registrations;
 
 // Initial Audit Logs
 const INITIAL_AUDIT_LOGS = [
@@ -300,7 +753,7 @@ const INITIAL_INTERVIEWERS = [
 function getFutureDate(days = 0, hours = 0) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  d.setHours(d.getHours() + hours);
+  d.setHours(23, 59, 0, 0); // Mặc định chuẩn 24h: 23:59:00 cuối ngày
   return d.toISOString();
 }
 
@@ -380,6 +833,12 @@ class Store {
               cloudData.candidates = cloudData.candidates.filter(c =>
                 cloudData.registrations.some(r => r.candidateId === c.id && r.status !== 'cancelled')
               );
+              cloudData.registrations.forEach(r => {
+                if (r.checkInStatus === 'attended') {
+                  r.checkInStatus = 'checked-in';
+                  migratedCampaign = true;
+                }
+              });
             }
 
             // Loại bỏ hoàn toàn Gen XV và Gen XIV, nâng cấp lên Gen XVII - THE WONDER BOUND
@@ -395,6 +854,15 @@ class Store {
                   c.bannerImage = 'images/wonder-bound-banner.png';
                   c.backgroundImage = 'images/wonder-bound-bg.png';
                   migratedCampaign = true;
+                }
+                // Chuẩn hóa deadline cũ có giờ 12:00 thành 23:59 chuẩn 24h
+                if (c.registrationDeadline) {
+                  const dl = new Date(c.registrationDeadline);
+                  if (dl.getHours() === 12 && dl.getMinutes() === 0) {
+                    dl.setHours(23, 59, 0, 0);
+                    c.registrationDeadline = dl.toISOString();
+                    migratedCampaign = true;
+                  }
                 }
               });
               if (!cloudData.campaigns.some(c => c.id === 'camp-gen17')) {
@@ -422,6 +890,14 @@ class Store {
                 !['adm-bcn-shared', 'adm-mentor-shared', 'adm-hr-shared'].includes(a.id) &&
                 !['banchunhiem.mcc@gmail.com', 'mentor.mcc@gmail.com', 'bannhansu.mcc@gmail.com'].includes(a.username)
               );
+            }
+
+            // Tự động nạp 30 ứng viên mẫu phân bổ đều 6 ban nếu trên Cloud chưa có ứng viên
+            if (!Array.isArray(cloudData.candidates) || cloudData.candidates.length === 0) {
+              const mock = generateMockCandidatesAndRegistrations(cloudData.slots || INITIAL_SLOTS);
+              cloudData.candidates = mock.candidates;
+              cloudData.registrations = mock.registrations;
+              migratedCampaign = true;
             }
 
             this.isSyncingFromCloud = true;
@@ -497,9 +973,12 @@ class Store {
           );
         }
 
-        // Tự động dọn dẹp các đơn waitlist cũ nếu có
+        // Tự động dọn dẹp các đơn waitlist cũ nếu có và chuẩn hóa trạng thái điểm danh
         if (Array.isArray(parsed.registrations)) {
           parsed.registrations = parsed.registrations.filter(r => r.status !== 'waitlist');
+          parsed.registrations.forEach(r => {
+            if (r.checkInStatus === 'attended') r.checkInStatus = 'checked-in';
+          });
         }
 
         parsed.systemSettings = { isWaitlistEnabled: false };
@@ -515,6 +994,14 @@ class Store {
               c.slogan = "BE THE FLAVOR WE'RE MISSING";
               c.bannerImage = 'images/wonder-bound-banner.png';
               c.backgroundImage = 'images/wonder-bound-bg.png';
+            }
+            // Chuẩn hóa deadline cũ có giờ 12:00 thành 23:59 chuẩn 24h
+            if (c.registrationDeadline) {
+              const dl = new Date(c.registrationDeadline);
+              if (dl.getHours() === 12 && dl.getMinutes() === 0) {
+                dl.setHours(23, 59, 0, 0);
+                c.registrationDeadline = dl.toISOString();
+              }
             }
           });
           if (!parsed.campaigns.some(c => c.id === 'camp-gen17')) {
@@ -538,6 +1025,14 @@ class Store {
             !['adm-bcn-shared', 'adm-mentor-shared', 'adm-hr-shared'].includes(a.id) &&
             !['banchunhiem.mcc@gmail.com', 'mentor.mcc@gmail.com', 'bannhansu.mcc@gmail.com'].includes(a.username)
           );
+        }
+
+        // Tự động nạp 30 ứng viên mẫu phân bổ đều 6 ban nếu chưa có ứng viên nào trong máy
+        if (!Array.isArray(parsed.candidates) || parsed.candidates.length === 0) {
+          const mock = generateMockCandidatesAndRegistrations(parsed.slots || INITIAL_SLOTS);
+          parsed.candidates = mock.candidates;
+          parsed.registrations = mock.registrations;
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch (e) {}
         }
 
         return parsed;
@@ -574,6 +1069,29 @@ class Store {
     } catch (e) {
       console.error('Error saving data', e);
     }
+  }
+
+  seedTestData(force = true) {
+    const current = this.getCurrentAdmin();
+    const isRoot = current && (
+      current.id === 'adm-root-admin' || 
+      current.username?.toLowerCase() === 'admin.mcc@gmail.com' ||
+      current.role === 'Admin' ||
+      current.fullName?.toLowerCase() === 'admin'
+    );
+    if (!isRoot) {
+      throw new Error('Chỉ tài khoản Quản trị viên (Admin) mới có quyền nạp dữ liệu mẫu.');
+    }
+
+    const mock = generateMockCandidatesAndRegistrations(this.data.slots || INITIAL_SLOTS);
+    this.data.candidates = mock.candidates;
+    this.data.registrations = mock.registrations;
+    this.saveData();
+    this.logAudit('Admin', 'SEED_TEST_DATA', 'System', 'all', null, { candidates: mock.candidates.length, registrations: mock.registrations.length }, 'Nạp 30 ứng viên mẫu phân bổ đều 6 ban');
+    return {
+      candidateCount: mock.candidates.length,
+      registrationCount: mock.registrations.length
+    };
   }
 
   resetToDefault() {

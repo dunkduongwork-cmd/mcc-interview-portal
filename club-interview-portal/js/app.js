@@ -170,6 +170,8 @@ function initApp() {
     'lookup': 'lookup',
     'doi-ca': 'lookup',
     'admin': 'admin',
+    'admin/checkin': 'admin',
+    'admin-checkin': 'admin',
     'quan-tri': 'admin'
   };
 
@@ -180,7 +182,7 @@ function initApp() {
   };
 
   function switchRoute(routeName, updateHash = true) {
-    const resolvedRoute = ROUTE_MAP[routeName] || routeName;
+    const resolvedRoute = ROUTE_MAP[routeName] || (routeName.startsWith('admin') ? 'admin' : routeName);
 
     Object.keys(views).forEach(k => {
       if (views[k]) {
@@ -226,8 +228,16 @@ function initApp() {
 
   function handleHashChange() {
     const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
-    const targetRoute = ROUTE_MAP[rawHash] || 'candidate';
+    if (rawHash === 'admin/checkin' || rawHash === 'admin-checkin' || rawHash === 'checkin') {
+      currentActiveAdminTab = 'checkin';
+    }
+    const targetRoute = ROUTE_MAP[rawHash] || (rawHash.startsWith('admin') ? 'admin' : 'candidate');
     switchRoute(targetRoute, false);
+    if (rawHash === 'admin/checkin' || rawHash === 'admin-checkin' || rawHash === 'checkin') {
+      if (typeof window.switchAdminTab === 'function') {
+        window.switchAdminTab('checkin');
+      }
+    }
   }
 
   // Global access for programmatic switching
@@ -245,6 +255,78 @@ function initApp() {
       }
     });
   });
+
+  // --- 24-HOUR TIME & DEADLINE FORMATTING UTILITIES (STRICT 24H, NO AM/PM) ---
+  function formatDeadlineDisplay24h(isoDate) {
+    if (!isoDate) return '--:-- --/--/----';
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return '--:-- --/--/----';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const MM = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${hh}:${mm} - ${dd}/${MM}/${yyyy}`;
+  }
+
+  // --- 24-HOUR DEADLINE TIME INPUT HELPER (STRICT 24H, KHÔNG AM/PM) ---
+  function initDeadlineTimeInput() {
+    const timeInput = document.getElementById('admin-deadline-time');
+    if (!timeInput || timeInput.dataset.bound) return;
+    timeInput.dataset.bound = 'true';
+
+    // Auto-formatting as user types (e.g. 2359 -> 23:59)
+    timeInput.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/[^0-9:]/g, '');
+      if (!val.includes(':') && val.length >= 3) {
+        val = val.slice(0, 2) + ':' + val.slice(2, 4);
+      }
+      if (val.length > 5) val = val.slice(0, 5);
+      e.target.value = val;
+    });
+
+    // Auto-normalize on blur to strict HH:mm
+    timeInput.addEventListener('blur', (e) => {
+      let val = e.target.value.trim();
+      if (!val) {
+        e.target.value = '23:59';
+        return;
+      }
+      const parts = val.split(':');
+      let h = 23, m = 59;
+      if (parts.length === 2) {
+        h = parseInt(parts[0], 10) || 0;
+        m = parseInt(parts[1], 10) || 0;
+      } else if (val.length <= 2) {
+        h = parseInt(val, 10) || 0;
+        m = 0;
+      } else if (val.length === 4) {
+        h = parseInt(val.slice(0, 2), 10) || 0;
+        m = parseInt(val.slice(2, 4), 10) || 0;
+      }
+      if (h < 0) h = 0;
+      if (h > 23) h = 23;
+      if (m < 0) m = 0;
+      if (m > 59) m = 59;
+      e.target.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    });
+
+    // Support Arrow Up / Down keys to easily increment / decrement minutes
+    timeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        let parts = (e.target.value || '23:59').split(':').map(Number);
+        let h = isNaN(parts[0]) ? 23 : parts[0];
+        let m = isNaN(parts[1]) ? 59 : parts[1];
+        let totalMin = h * 60 + m;
+        if (e.key === 'ArrowUp') totalMin = (totalMin + 1) % 1440;
+        else totalMin = (totalMin - 1 + 1440) % 1440;
+        const newH = Math.floor(totalMin / 60);
+        const newM = totalMin % 60;
+        e.target.value = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+      }
+    });
+  }
 
   // --- CANDIDATE WIZARD CONTROLLER ---
   function initCandidateWizard() {
@@ -268,11 +350,10 @@ function initApp() {
       heroBgImg.src = activeCamp.backgroundImage;
     }
 
-    // Deadline Display & Lock Wizard
+    // Deadline Display & Lock Wizard (Strict 24h Format: HH:mm - DD/MM/YYYY)
     if (activeCamp.registrationDeadline) {
-      const d = new Date(activeCamp.registrationDeadline);
       const dlText = document.getElementById('hero-deadline-text');
-      if (dlText) dlText.textContent = d.toLocaleString('vi-VN');
+      if (dlText) dlText.textContent = formatDeadlineDisplay24h(activeCamp.registrationDeadline);
       
       const isPast = store.isPastDeadline(activeCamp.id);
       const badge = document.getElementById('hero-deadline-badge');
@@ -519,75 +600,144 @@ function initApp() {
     const slot1 = wizardState.dept1Slot;
     const slot2 = wizardState.dept2Slot;
 
-    const formatSlotDetail = (slot) => {
-      const [yy, mm, dd] = (slot.date || '').split('-');
-      const ivNames = (slot.interviewers || []).map(i => i.fullName).join(', ') || 'Ban Tuyển Quân';
-
-      return `
-        <div class="p-4 rounded-2xl border text-xs text-amber-950 space-y-2 bg-white/85 backdrop-blur-sm border-amber-300/80 shadow-xs">
-          <div class="flex items-center justify-between font-black flex-wrap gap-1">
-            <span class="text-amber-900 uppercase tracking-wider text-[11px] font-bold">
-              ${slot.dept.name}
-            </span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-              ✓ Ca Chính Thức
-            </span>
-          </div>
-
-          <div class="font-black text-slate-950 text-sm">⏰ ${slot.shiftLabel || (slot.startTime + ' - ' + slot.endTime)} — Ngày ${dd}/${mm}/${yy}</div>
-          <div>📍 Địa điểm: <strong>${escapeHtml(slot.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</strong></div>
-          <div>📌 Sức chứa: <strong>${slot.capacity} ứng viên / ca</strong></div>
-        </div>
-      `;
+    const formatSlotDate = (dateStr) => {
+      if (!dateStr) return '';
+      const [yy, mm, dd] = dateStr.split('-');
+      try {
+        const d = new Date(parseInt(yy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10));
+        const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const dayName = days[d.getDay()] || '';
+        return `${dayName ? dayName + ', ' : ''}${dd}/${mm}/${yy}`;
+      } catch (e) {
+        return `${dd}/${mm}/${yy}`;
+      }
     };
+
+    const dept1 = slot1 ? (slot1.dept || store.getDepartmentById(slot1.departmentId)) : null;
+    const dept2 = slot2 ? (slot2.dept || store.getDepartmentById(slot2.departmentId)) : null;
 
     const submitBtn = document.getElementById('btn-submit-registration');
     if (submitBtn) {
       submitBtn.innerHTML = '🔥 Xác nhận đăng ký ca';
-      submitBtn.className = 'px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm shadow-xl shadow-orange-600/30 transition-all flex items-center gap-2';
+      submitBtn.className = 'px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm shadow-xl shadow-orange-600/30 transition-all flex items-center gap-2 cursor-pointer';
+    }
+
+    // Dynamic slot HTML: 2 slots stacked or 1 single roomy slot
+    let slotsHtml = '';
+    if (slot1 && slot2) {
+      slotsHtml = `
+        <div class="sm:col-span-7 space-y-1.5 flex flex-col justify-center">
+          <!-- NV1 -->
+          <div class="bg-white/60 backdrop-blur-xs rounded-xl p-2 border-l-4 border-l-[#8B1E22] border border-amber-600/25 shadow-2xs">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[10px] font-black uppercase text-[#8B1E22] flex items-center gap-1 truncate">
+                <span>🎯 NV1:</span> <span class="truncate">${escapeHtml(dept1?.name || 'Ban 1')}</span>
+              </span>
+              <span class="text-[9px] font-mono font-bold text-amber-900 bg-amber-100/90 px-1.5 py-0.2 rounded border border-amber-300 shrink-0">
+                ${escapeHtml(slot1.shiftLabel || (slot1.startTime + ' – ' + slot1.endTime))}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[9.5px] sm:text-[10px] text-[#78350f] mt-0.5 font-medium">
+              <span>📅 ${formatSlotDate(slot1.date)}</span>
+              <span class="truncate max-w-[130px] sm:max-w-[150px]">📍 ${escapeHtml(slot1.location || 'P.501 - Nhà E4')}</span>
+            </div>
+          </div>
+
+          <!-- NV2 -->
+          <div class="bg-white/60 backdrop-blur-xs rounded-xl p-2 border-l-4 border-l-amber-600 border border-amber-600/25 shadow-2xs">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[10px] font-black uppercase text-amber-900 flex items-center gap-1 truncate">
+                <span>🎯 NV2:</span> <span class="truncate">${escapeHtml(dept2?.name || 'Ban 2')}</span>
+              </span>
+              <span class="text-[9px] font-mono font-bold text-amber-900 bg-amber-100/90 px-1.5 py-0.2 rounded border border-amber-300 shrink-0">
+                ${escapeHtml(slot2.shiftLabel || (slot2.startTime + ' – ' + slot2.endTime))}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[9.5px] sm:text-[10px] text-[#78350f] mt-0.5 font-medium">
+              <span>📅 ${formatSlotDate(slot2.date)}</span>
+              <span class="truncate max-w-[130px] sm:max-w-[150px]">📍 ${escapeHtml(slot2.location || 'P.501 - Nhà E4')}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const activeSlot = slot1 || slot2;
+      const activeDept = dept1 || dept2;
+      slotsHtml = `
+        <div class="sm:col-span-7 flex flex-col justify-center">
+          <div class="bg-white/65 backdrop-blur-xs rounded-xl p-2.5 sm:p-3 border-l-4 border-l-[#8B1E22] border border-amber-600/25 shadow-2xs space-y-1 sm:space-y-1.5">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[11px] sm:text-xs font-black uppercase text-[#8B1E22] flex items-center gap-1.5 truncate">
+                <span>🎯 NGUYỆN VỌNG:</span> <span class="truncate">${escapeHtml(activeDept?.name || 'Ban ứng tuyển')}</span>
+              </span>
+              <span class="text-[9.5px] sm:text-[10px] font-mono font-bold text-amber-950 bg-amber-100/90 px-2 py-0.5 rounded-lg border border-amber-300 shrink-0">
+                ${escapeHtml(activeSlot?.shiftLabel || (activeSlot?.startTime + ' – ' + activeSlot?.endTime))}
+              </span>
+            </div>
+            <div class="text-[11px] sm:text-xs text-[#451a03] font-bold">
+              📅 ${formatSlotDate(activeSlot?.date)}
+            </div>
+            <div class="text-[10px] sm:text-[11px] text-[#78350f] font-medium">
+              📍 Địa điểm: <strong>${escapeHtml(activeSlot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</strong>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     container.innerHTML = `
-      <div class="golden-ticket-card p-6 sm:p-7 space-y-4">
-        <div class="ticket-notch-left"></div>
-        <div class="ticket-notch-right"></div>
-
-        <!-- Ticket Header -->
-        <div class="flex items-center justify-between border-b border-amber-400/60 pb-3 flex-wrap gap-2">
-          <div class="flex items-center gap-2.5">
-            <span class="text-2xl">🎫</span>
+      <div class="wonka-ticket-wrapper">
+        <div class="wonka-ticket-content">
+          
+          <!-- 1. HEADER (Giãn dòng thoáng + Kéo xuống + Chỉ giữ Slogan) -->
+          <div class="text-center pt-2 sm:pt-3 space-y-1 sm:space-y-1.5">
             <div>
-              <span class="text-[10px] font-black tracking-widest text-amber-900 uppercase block leading-none">WONKA GOLDEN TICKET</span>
-              <h4 class="font-black text-amber-950 text-base sm:text-lg tracking-tight">TẤM VÉ BƯỚC VÀO VÒNG PHỎNG VẤN</h4>
+              <span class="text-[10px] sm:text-[11.5px] font-black uppercase tracking-[0.3em] text-[#8B1E22]">
+                ★ WONKA GOLDEN TICKET ★
+              </span>
+            </div>
+            <h1 class="text-lg sm:text-[25px] font-black tracking-normal text-[#451a03] uppercase drop-shadow-xs leading-snug py-0.5">
+              TẤM VÉ BƯỚC VÀO VÒNG PHỎNG VẤN
+            </h1>
+            <div class="text-[11px] sm:text-xs font-bold text-[#78350f] tracking-wider italic">
+              “Be The Flavor We're Missing”
             </div>
           </div>
-          <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-900/15 text-amber-950 border border-amber-800/30">
-            MCC GEN XVII • 2026
-          </span>
-        </div>
 
-        <!-- Personal Info inside Ticket -->
-        <div class="p-4 rounded-2xl bg-white/75 backdrop-blur-sm border border-amber-300/60 space-y-2">
-          <h5 class="font-black text-amber-900 text-[11px] uppercase tracking-wider">Thông Tin Ứng Viên:</h5>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-amber-950">
-            <div>Họ và tên: <strong class="text-slate-950">${escapeHtml(info.fullName)}</strong></div>
-            <div>Mã sinh viên (MSV): <strong class="text-slate-950 font-mono">${escapeHtml(info.studentId)}</strong></div>
-            <div>Email: <strong class="text-slate-950">${escapeHtml(info.email)}</strong></div>
-            <div>SĐT (Zalo): <strong class="text-slate-950">${escapeHtml(info.phone)}</strong></div>
-            ${info.academicClass ? `<div>Lớp / Khóa: <strong class="text-slate-950">${escapeHtml(info.academicClass)}</strong></div>` : ''}
+          <!-- 2. BODY CONTENT: CANDIDATE INFO + INTERVIEW SLOTS -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-2.5 my-auto">
+            
+            <!-- Left Column: Thông tin ứng viên (5/12 cols) -->
+            <div class="sm:col-span-5 bg-white/50 backdrop-blur-xs rounded-xl p-2 sm:p-2.5 border border-amber-600/25 flex flex-col justify-between shadow-2xs">
+              <div>
+                <div class="flex items-center justify-between pb-1 mb-1 border-b border-amber-600/20">
+                  <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-[#8B1E22]">👤 ỨNG VIÊN</span>
+                  <span class="text-[9px] font-mono font-bold bg-amber-200/80 text-[#78350f] px-1.5 py-0.2 rounded">MSV: ${escapeHtml(info.studentId)}</span>
+                </div>
+                <div class="text-xs sm:text-sm font-black text-[#451a03] leading-snug">
+                  ${escapeHtml(info.fullName)}
+                </div>
+                ${info.academicClass ? `
+                <div class="text-[10px] text-[#78350f] font-medium leading-tight mt-0.5">
+                  ${escapeHtml(info.academicClass)}
+                </div>` : ''}
+              </div>
+
+              <div class="space-y-0.5 pt-1.5 border-t border-amber-600/15 text-[9.5px] sm:text-[10px] text-[#78350f]">
+                <div class="flex items-center gap-1 truncate">
+                  <span class="text-amber-800">✉</span> <span class="font-medium truncate">${escapeHtml(info.email)}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-amber-800">☎</span> <span class="font-bold">${escapeHtml(info.phone)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Ca phỏng vấn đã chọn (7/12 cols) -->
+            ${slotsHtml}
+
           </div>
-        </div>
 
-        <!-- Chosen Slots -->
-        <div class="space-y-2.5">
-          <h5 class="font-black text-amber-900 text-[11px] uppercase tracking-wider">Lịch Phỏng Vấn Chính Thức:</h5>
-          ${slot1 ? formatSlotDetail(slot1) : ''}
-          ${slot2 ? formatSlotDetail(slot2) : ''}
-        </div>
-
-        <div class="pt-2 flex items-center justify-between text-[10px] text-amber-900/80 border-t border-amber-400/50 font-medium">
-          <span>✨ "Be the flavor we're missing"</span>
-          <span class="font-mono font-bold tracking-wider">OFFICIAL ADMISSION PASS</span>
         </div>
       </div>
     `;
@@ -657,14 +807,6 @@ function initApp() {
     // Trigger celebration confetti cannon
     triggerConfetti();
 
-    // Re-trigger official stamp seal drop animation
-    const stampEl = document.getElementById('success-modal-stamp');
-    if (stampEl) {
-      stampEl.classList.remove('animate-stamp');
-      void stampEl.offsetWidth; // Force reflow
-      stampEl.classList.add('animate-stamp');
-    }
-
     const container = document.getElementById('success-registrations-list');
     container.innerHTML = '';
     const activeCamp = store.getActiveCampaign();
@@ -681,51 +823,51 @@ function initApp() {
       title.textContent = 'Hẹn Gặp Bạn Tại Buổi Phỏng Vấn!';
     }
     if (subtitle) {
-      subtitle.textContent = 'Hãy lưu lại mã hồ sơ hoặc dùng MSV + Email để tra cứu / đổi ca khi cần.';
+      subtitle.textContent = 'Dùng Mã sinh viên (MSV) + Email để tra cứu hoặc đổi ca khi cần.';
     }
+
+    const formatSlotDate = (dateStr) => {
+      if (!dateStr) return '';
+      const [yy, mm, dd] = dateStr.split('-');
+      try {
+        const d = new Date(parseInt(yy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10));
+        const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+        const dayName = days[d.getDay()] || '';
+        return `${dayName ? dayName + ', ' : ''}${dd}/${mm}/${yy}`;
+      } catch (e) {
+        return `${dd}/${mm}/${yy}`;
+      }
+    };
 
     registrations.forEach(reg => {
       const slot = store.getSlotById(reg.slotId);
       const dept = store.getDepartmentById(reg.departmentId);
-      const [yy, mm, dd] = (slot?.date || '').split('-');
 
       const item = document.createElement('div');
-      item.className = 'golden-ticket-card p-4.5 rounded-2xl text-xs text-amber-950 space-y-2.5 border border-amber-400 shadow-sm relative';
+      item.className = 'p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50/70 border border-amber-300/80 text-xs text-amber-950 space-y-2 shadow-2xs';
       item.innerHTML = `
-        <div class="ticket-notch-left"></div>
-        <div class="ticket-notch-right"></div>
-        <div class="flex flex-wrap items-center justify-between font-black gap-2 mb-1">
-          <span class="text-amber-900 uppercase font-black tracking-wide">
-            ${dept.name}
+        <div class="flex items-center justify-between gap-2 border-b border-amber-200/70 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🎯</span>
+            <span class="text-amber-950 uppercase font-black tracking-wide text-xs sm:text-sm">
+              ${escapeHtml(dept?.name || 'Ban Chuyên Môn')}
+            </span>
+          </div>
+          <span class="font-mono font-bold text-[11px] text-amber-950 bg-white/95 px-2.5 py-1 rounded-xl border border-amber-300 shadow-2xs shrink-0">
+            ${escapeHtml(slot?.shiftLabel || (slot?.startTime + ' – ' + slot?.endTime))}
           </span>
-          <div class="flex items-center gap-1.5">
-            <span class="font-mono bg-white/90 px-2 py-0.5 rounded-lg border border-amber-300 text-xs font-bold text-amber-950">${reg.bookingCode}</span>
-            <button type="button" class="btn-copy-code px-2.5 py-1 text-[11px] font-bold rounded-lg border border-amber-300 bg-white hover:bg-amber-100 text-amber-900 transition-all flex items-center gap-1 cursor-pointer" data-code="${reg.bookingCode}">
-              <span>📋</span> <span>Sao chép</span>
-            </button>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11.5px] text-[#78350f]">
+          <div class="flex items-center gap-1.5 font-bold text-amber-950">
+            <span>📅</span>
+            <span>${formatSlotDate(slot?.date)}</span>
+          </div>
+          <div class="flex items-center gap-1.5 font-medium truncate">
+            <span>📍</span>
+            <span class="truncate">${escapeHtml(slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</span>
           </div>
         </div>
-        <div>⏰ Thời gian ca phỏng vấn: <strong>${slot?.shiftLabel || (slot?.startTime + ' - ' + slot?.endTime)} (Ngày ${dd}/${mm}/${yy})</strong></div>
-        <div class="text-amber-900/80">📍 Địa điểm: <strong>${escapeHtml(slot?.location || 'Phòng 501 - Nhà E4, 144 Xuân Thủy')}</strong></div>
       `;
-
-      const copyBtn = item.querySelector('.btn-copy-code');
-      if (copyBtn) {
-        copyBtn.onclick = async (e) => {
-          e.stopPropagation();
-          try {
-            await navigator.clipboard.writeText(reg.bookingCode);
-            copyBtn.classList.add('copied');
-            copyBtn.innerHTML = '<span>✓</span> <span>Đã sao chép!</span>';
-            setTimeout(() => {
-              copyBtn.classList.remove('copied');
-              copyBtn.innerHTML = '<span>📋</span> <span>Sao chép</span>';
-            }, 2000);
-          } catch (err) {
-            window.UI.showToast(`Mã đơn: ${reg.bookingCode}`, 'info');
-          }
-        };
-      }
 
       container.appendChild(item);
     });
@@ -1127,6 +1269,8 @@ function initApp() {
   let currentCheckinShift = 'all';
 
   function renderInterviewerWorkspace() {
+    const currentAdmin = store.getCurrentAdmin();
+    if (!currentAdmin) return;
     const activeCamp = store.getActiveCampaign();
     const canCheckinAll = store.hasPermission('checkin:view_all');
     const hasDept = currentAdmin && currentAdmin.deptId && currentAdmin.deptId !== 'all';
@@ -1308,17 +1452,19 @@ function initApp() {
       const tr = document.createElement('tr');
       tr.className = 'border-b border-slate-100 hover:bg-slate-50/70 transition-all text-xs';
 
+      const isCheckedIn = (reg.checkInStatus === 'checked-in' || reg.checkInStatus === 'attended');
       const checkInClasses = {
         'pending': 'bg-slate-100 text-slate-600',
         'checked-in': 'bg-emerald-100 text-emerald-800 font-bold',
+        'attended': 'bg-emerald-100 text-emerald-800 font-bold',
         'absent': 'bg-rose-100 text-rose-700 font-bold'
       };
 
       tr.innerHTML = `
-        <td class="px-4 py-3 font-mono font-black text-slate-800">${escapeHtml(reg.bookingCode)}</td>
+        <td class="px-4 py-3 font-mono font-black text-slate-900">${escapeHtml(cand.studentId || '-')}</td>
         <td class="px-4 py-3">
           <div class="font-bold text-slate-900">${escapeHtml(cand.fullName || 'N/A')}</div>
-          <div class="text-[11px] text-slate-500">MSV: ${escapeHtml(cand.studentId || '')} • ${escapeHtml(cand.academicClass || '')}</div>
+          <div class="text-[11px] text-slate-500">${escapeHtml(cand.academicClass || '')}</div>
         </td>
         <td class="px-4 py-3 font-bold text-orange-700">${escapeHtml(reg.dept?.name || '')}</td>
         <td class="px-4 py-3">
@@ -1331,14 +1477,14 @@ function initApp() {
         </td>
         <td class="px-4 py-3 text-right">
           ${store.hasPermission('checkin:mark_status') ? `
-            <select class="checkin-select text-xs rounded-xl border border-slate-200 py-1.5 px-3 ${checkInClasses[reg.checkInStatus]} outline-none font-bold cursor-pointer transition-all">
+            <select class="checkin-select text-xs rounded-xl border border-slate-200 py-1.5 px-3 ${checkInClasses[reg.checkInStatus] || checkInClasses['pending']} outline-none font-bold cursor-pointer transition-all">
               <option value="pending" ${reg.checkInStatus === 'pending' ? 'selected' : ''}>⏳ Chờ đến</option>
-              <option value="checked-in" ${reg.checkInStatus === 'checked-in' ? 'selected' : ''}>🟢 Đã đến</option>
+              <option value="checked-in" ${isCheckedIn ? 'selected' : ''}>🟢 Đã đến</option>
               <option value="absent" ${reg.checkInStatus === 'absent' ? 'selected' : ''}>🔴 Vắng mặt</option>
             </select>
           ` : `
-            <span class="inline-block px-3 py-1 text-xs rounded-xl ${checkInClasses[reg.checkInStatus]} font-bold">
-              ${reg.checkInStatus === 'checked-in' ? '🟢 Đã đến' : reg.checkInStatus === 'absent' ? '🔴 Vắng mặt' : '⏳ Chờ đến'}
+            <span class="inline-block px-3 py-1 text-xs rounded-xl ${checkInClasses[reg.checkInStatus] || checkInClasses['pending']} font-bold">
+              ${isCheckedIn ? '🟢 Đã đến' : reg.checkInStatus === 'absent' ? '🔴 Vắng mặt' : '⏳ Chờ đến'}
             </span>
           `}
         </td>
@@ -1564,9 +1710,11 @@ function initApp() {
       };
     }
 
-    // Set Deadline Inputs (Separated Date & Time)
+    // Set Deadline Inputs (Strict 24-Hour text input, NO AM/PM)
+    initDeadlineTimeInput();
     const dateInput = document.getElementById('admin-deadline-date');
     const timeInput = document.getElementById('admin-deadline-time');
+
     if (activeCamp.registrationDeadline) {
       const d = new Date(activeCamp.registrationDeadline);
       const yyyy = d.getFullYear();
@@ -1612,6 +1760,19 @@ function initApp() {
       const canManageSlots = store.hasPermission('slots:toggle_open') || store.hasPermission('slots:delete');
       if (!canManageSlots) slotActionsDropdown.classList.add('hidden');
       else slotActionsDropdown.classList.remove('hidden');
+    }
+
+    // Seed test data button: CHỈ DÀNH RIÊNG CHO TÀI KHOẢN ADMIN
+    const isRootAdmin = currentAdmin && (
+      currentAdmin.id === 'adm-root-admin' || 
+      currentAdmin.username?.toLowerCase() === 'admin.mcc@gmail.com' ||
+      currentAdmin.role === 'Admin' ||
+      currentAdmin.fullName?.toLowerCase() === 'admin'
+    );
+    const menuSeedContainer = document.getElementById('menu-seed-container');
+    if (menuSeedContainer) {
+      if (isRootAdmin) menuSeedContainer.classList.remove('hidden');
+      else menuSeedContainer.classList.add('hidden');
     }
 
     // Populate filter dropdowns with Granular Permissions scoping
@@ -2024,6 +2185,37 @@ function initApp() {
     return Array.from(checked).map(c => c.value);
   }
 
+  // Action Seed Mock Data: CHỈ DÀNH CHO TÀI KHOẢN ADMIN CẤP CAO
+  const handleSeedTestData = () => {
+    slotActionsMenu?.classList.add('hidden');
+    const currentAdmin = store.getCurrentAdmin();
+    const isRootAdmin = currentAdmin && (
+      currentAdmin.id === 'adm-root-admin' || 
+      currentAdmin.username?.toLowerCase() === 'admin.mcc@gmail.com' ||
+      currentAdmin.role === 'Admin' ||
+      currentAdmin.fullName?.toLowerCase() === 'admin'
+    );
+    if (!isRootAdmin) {
+      window.UI.showToast('Tính năng này chỉ dành riêng cho tài khoản Quản trị viên (Admin).', 'error');
+      return;
+    }
+
+    if (confirm('Bạn có muốn nạp bộ dữ liệu thử nghiệm chuẩn (30 ứng viên, phân bổ đều 6 ban: mỗi ban 6 đơn đăng ký) không?\n\n- Đầy đủ điểm danh, nhận xét phỏng vấn, điểm số\n- Phân bổ đều cho Ban Truyền Thông, Dự Án, Kỹ Thuật, Đối Ngoại, Sự Kiện, Nhân Sự')) {
+      try {
+        const res = store.seedTestData(true);
+        window.UI.showToast(`Đã nạp thành công ${res.candidateCount} ứng viên và ${res.registrationCount} lượt đăng ký đều cho 6 ban!`, 'success');
+        renderAdminCandidatesTable();
+        renderAdminSlotsTable();
+        if (typeof renderInterviewerWorkspace === 'function') renderInterviewerWorkspace();
+        setupAdminSidebarNav(currentAdmin);
+      } catch (err) {
+        window.UI.showToast(err.message, 'error');
+      }
+    }
+  };
+
+  document.getElementById('menu-btn-seed-test-data')?.addEventListener('click', handleSeedTestData);
+
   // Action 1: Open Selected Slots
   document.getElementById('btn-action-open-selected')?.addEventListener('click', () => {
     slotActionsMenu?.classList.add('hidden');
@@ -2155,7 +2347,8 @@ function initApp() {
       if (searchVal) {
         const matches = (cand.fullName || '').toLowerCase().includes(searchVal) ||
           (cand.studentId || '').toLowerCase().includes(searchVal) ||
-          (r.bookingCode || '').toLowerCase().includes(searchVal) ||
+          (cand.academicClass || '').toLowerCase().includes(searchVal) ||
+          (cand.phone || '').toLowerCase().includes(searchVal) ||
           (cand.email || '').toLowerCase().includes(searchVal);
         if (!matches) return false;
       }
@@ -2203,10 +2396,10 @@ function initApp() {
           </span>`;
 
       tr.innerHTML = `
-        <td class="px-4 py-3 font-mono font-black ${isCancelled ? 'text-slate-400' : 'text-[#8B1E22]'}">${escapeHtml(r.bookingCode)}</td>
+        <td class="px-4 py-3 font-mono font-black ${isCancelled ? 'text-slate-400' : 'text-slate-900'}">${escapeHtml(cand.studentId || '-')}</td>
         <td class="px-4 py-3">
           <div class="font-bold text-slate-900 ${isCancelled ? 'line-through text-slate-500' : ''}">${escapeHtml(cand.fullName || 'N/A')}</div>
-          <div class="text-[11px] text-slate-500">MSV: ${escapeHtml(cand.studentId || '')} • ${escapeHtml(cand.academicClass || '')}</div>
+          <div class="text-[11px] text-slate-500">${escapeHtml(cand.academicClass || '')}${cand.academicClass && cand.phone ? ' • ' : ''}${escapeHtml(cand.phone || '')}</div>
         </td>
         <td class="px-4 py-3 font-bold text-slate-700">${escapeHtml(r.dept?.name || '')}</td>
         <td class="px-4 py-3 font-medium ${isCancelled ? 'line-through text-slate-400' : ''}">
@@ -2243,7 +2436,8 @@ function initApp() {
     const cand = reg.candidate || {};
     const slot = reg.slot;
 
-    document.getElementById('override-code').textContent = reg.bookingCode;
+    const codeEl = document.getElementById('override-code');
+    if (codeEl) codeEl.textContent = reg.bookingCode || '';
     document.getElementById('override-name').textContent = cand.fullName || '';
     document.getElementById('override-mssv').textContent = cand.studentId || '';
     document.getElementById('override-dept').textContent = reg.dept?.name || '';
@@ -2346,7 +2540,7 @@ function initApp() {
 
 
 
-  // Deadline Quick Preset Handler
+  // Deadline Quick Preset Handler (24h)
   window.__setDeadlinePreset = function(preset) {
     const now = new Date();
     let target = new Date();
@@ -2374,17 +2568,41 @@ function initApp() {
 
     const dateEl = document.getElementById('admin-deadline-date');
     const timeEl = document.getElementById('admin-deadline-time');
+
     if (dateEl) dateEl.value = `${yyyy}-${mm}-${dd}`;
     if (timeEl) timeEl.value = timeStr;
-    window.UI.showToast(`Đã chọn mốc: ${dd}/${mm}/${yyyy} lúc ${timeStr}. Hãy bấm "Lưu Hạn Chót"!`, 'info');
+
+    window.UI.showToast(`Đã chọn mốc 24h: ${timeStr} ngày ${dd}/${mm}/${yyyy}. Hãy bấm "Lưu Hạn Chót"!`, 'info');
   };
 
-  // Update Deadline Form
+  // Update Deadline Form (Strict 24h, NO AM/PM)
   document.getElementById('form-update-deadline')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const activeCamp = store.getActiveCampaign();
     const dateVal = document.getElementById('admin-deadline-date')?.value;
-    const timeVal = document.getElementById('admin-deadline-time')?.value || '23:59';
+    let timeVal = document.getElementById('admin-deadline-time')?.value?.trim() || '23:59';
+
+    // Normalize timeVal to strict HH:mm
+    const parts = timeVal.split(':');
+    let h = 23, m = 59;
+    if (parts.length === 2) {
+      h = parseInt(parts[0], 10) || 0;
+      m = parseInt(parts[1], 10) || 0;
+    } else if (timeVal.length <= 2) {
+      h = parseInt(timeVal, 10) || 0;
+      m = 0;
+    } else if (timeVal.length === 4) {
+      h = parseInt(timeVal.slice(0, 2), 10) || 0;
+      m = parseInt(timeVal.slice(2, 4), 10) || 0;
+    }
+    if (h < 0) h = 0;
+    if (h > 23) h = 23;
+    if (m < 0) m = 0;
+    if (m > 59) m = 59;
+    timeVal = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    const timeInputEl = document.getElementById('admin-deadline-time');
+    if (timeInputEl) timeInputEl.value = timeVal;
+
     if (!dateVal) {
       window.UI.showToast('Vui lòng chọn ngày hết hạn.', 'warning');
       return;
@@ -2392,8 +2610,8 @@ function initApp() {
 
     try {
       const isoStr = new Date(`${dateVal}T${timeVal}:00`).toISOString();
-      store.updateCampaignDeadline(activeCamp.id, isoStr, 'Admin cập nhật deadline đợt tuyển');
-      window.UI.showToast('Đã cập nhật deadline thành công!', 'success');
+      store.updateCampaignDeadline(activeCamp.id, isoStr, 'Admin cập nhật deadline đợt tuyển (24h)');
+      window.UI.showToast(`Đã lưu hạn chót 24h: ${timeVal} - ${dateVal.split('-').reverse().join('/')} thành công!`, 'success');
       renderAdminWorkspace();
       initCandidateWizard();
     } catch (err) {
@@ -2972,6 +3190,276 @@ function initApp() {
     }
   });
 
+  // --- 3D COSMIC STARFIELD CANVAS ANIMATION (WHIMSICAL THEATRE FACTORY) ---
+  function initHero3DStarfield() {
+    const canvas = document.getElementById('hero-3d-starfield');
+    const banner = document.getElementById('hero-campaign-banner-container');
+    if (!canvas || !banner) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      const rect = banner.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      if (width === 0 || height === 0) return;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.scale(dpr, dpr);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', () => {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      resizeCanvas();
+    });
+
+    const STAR_COUNT = 160;
+    const palette = [
+      { r: 251, g: 191, b: 36 },  // Amber gold #FBBF24
+      { r: 253, g: 230, b: 138 }, // Soft cream gold #FDE68A
+      { r: 245, g: 158, b: 11 },  // Deep warm gold #F59E0B
+      { r: 225, g: 195, b: 255 }, // Lavender lilac #E1C3FF
+      { r: 200, g: 145, b: 255 }, // Magical purple #C891FF
+      { r: 254, g: 175, b: 190 }, // Soft candy rose #FEAFBE
+      { r: 255, g: 255, b: 255 }, // Pure diamond sparkle #FFFFFF
+    ];
+
+    const stars = [];
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const col = palette[Math.floor(Math.random() * palette.length)];
+      stars.push({
+        x: (Math.random() - 0.5) * 1600,
+        y: (Math.random() - 0.5) * 1000,
+        z: Math.random() * 950 + 50,
+        size: Math.random() * 1.8 + 1.0,
+        color: col,
+        twinklePhase: Math.random() * Math.PI * 2,
+        twinkleSpeed: Math.random() * 0.04 + 0.018,
+        isHero: i < 8, // 8 hero stars with 4-point sparkle cross
+        rotation: Math.random() * Math.PI,
+        rotSpeed: (Math.random() - 0.5) * 0.015
+      });
+    }
+
+    // Shooting Star Manager
+    let shootingStar = null;
+    let nextShootingTime = Date.now() + 1500;
+
+    function spawnShootingStar() {
+      const startX = Math.random() * (width * 0.7) + width * 0.3;
+      const startY = Math.random() * (height * 0.35);
+      const angle = (Math.PI / 4) + (Math.random() * 0.2 - 0.1);
+      const speed = Math.random() * 9 + 11;
+      shootingStar = {
+        x: startX,
+        y: startY,
+        vx: -Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        length: Math.random() * 60 + 80,
+        life: 1.0,
+        decay: 0.022,
+        color: palette[Math.floor(Math.random() * 3)]
+      };
+      nextShootingTime = Date.now() + Math.random() * 6000 + 7000;
+    }
+
+    // Mouse Parallax tracking
+    let targetParallaxX = 0;
+    let targetParallaxY = 0;
+    let currParallaxX = 0;
+    let currParallaxY = 0;
+
+    banner.addEventListener('mousemove', (e) => {
+      const rect = banner.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      targetParallaxX = (mx / rect.width - 0.5) * 2;
+      targetParallaxY = (my / rect.height - 0.5) * 2;
+    });
+
+    banner.addEventListener('mouseleave', () => {
+      targetParallaxX = 0;
+      targetParallaxY = 0;
+    });
+
+    // Animation loop with IntersectionObserver
+    let isVisible = true;
+    let animId = null;
+
+    function renderStarfield() {
+      if (!isVisible) return;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Smooth mouse interpolation (LERP factor 0.05)
+      currParallaxX += (targetParallaxX - currParallaxX) * 0.05;
+      currParallaxY += (targetParallaxY - currParallaxY) * 0.05;
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const fov = 440;
+
+      // Render 3D Stars
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+
+        // Cosmic forward drift
+        s.z -= 0.35;
+        if (s.z <= 10) {
+          s.z = 1000;
+          s.x = (Math.random() - 0.5) * 1600;
+          s.y = (Math.random() - 0.5) * 1000;
+        }
+
+        s.twinklePhase += s.twinkleSpeed;
+        if (s.isHero) s.rotation += s.rotSpeed;
+
+        // 3D Parallax offset: foreground stars shift substantially more than background stars
+        const parallaxFactor = (1000 - s.z) * 0.045;
+        const projectedX = s.x + currParallaxX * parallaxFactor;
+        const projectedY = s.y + currParallaxY * parallaxFactor;
+
+        // Perspective Projection
+        const scale = fov / s.z;
+        const sx = centerX + projectedX * scale;
+        const sy = centerY + projectedY * scale;
+
+        // Skip if outside canvas bounds (with padding)
+        if (sx < -30 || sx > width + 30 || sy < -30 || sy > height + 30) continue;
+
+        // Visual depth calculations
+        const depthAlpha = Math.max(0.22, Math.min(1, (1000 - s.z) / 720));
+        const twinkle = 0.5 + 0.5 * Math.sin(s.twinklePhase);
+        const alpha = depthAlpha * (0.45 + 0.55 * twinkle);
+        const r = Math.max(0.7, s.size * scale * 1.05);
+
+        // Soft Glowing Core
+        const { r: cr, g: cg, b: cb } = s.color;
+        
+        if (r > 1.3 || s.isHero) {
+          // Radial glow for larger / closer stars
+          const glowRadius = Math.max(2, r * 2.8);
+          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius);
+          grad.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.95})`);
+          grad.addColorStop(0.35, `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.4})`);
+          grad.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(sx, sy, glowRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Solid star center
+        ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.max(0.5, r), 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4-pointed sparkle flare for Hero stars (✦)
+        if (s.isHero && alpha > 0.4) {
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(s.rotation);
+          const flareLen = r * 5.2 * twinkle;
+          const flareWidth = Math.max(0.8, r * 0.65);
+          
+          ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.75})`;
+          ctx.lineWidth = flareWidth;
+          ctx.beginPath();
+          // Horizontal & vertical flare lines
+          ctx.moveTo(-flareLen, 0);
+          ctx.lineTo(flareLen, 0);
+          ctx.moveTo(0, -flareLen);
+          ctx.lineTo(0, flareLen);
+          ctx.stroke();
+
+          // Delicate 45deg mini diagonal flares
+          const miniFlare = flareLen * 0.45;
+          ctx.beginPath();
+          ctx.moveTo(-miniFlare, -miniFlare);
+          ctx.lineTo(miniFlare, miniFlare);
+          ctx.moveTo(-miniFlare, miniFlare);
+          ctx.lineTo(miniFlare, -miniFlare);
+          ctx.stroke();
+
+          ctx.restore();
+        }
+      }
+
+      // Check & Draw Shooting Star
+      const now = Date.now();
+      if (!shootingStar && now >= nextShootingTime) {
+        spawnShootingStar();
+      }
+
+      if (shootingStar) {
+        shootingStar.x += shootingStar.vx;
+        shootingStar.y += shootingStar.vy;
+        shootingStar.life -= shootingStar.decay;
+
+        if (shootingStar.life <= 0 || shootingStar.x < -100 || shootingStar.y > height + 100) {
+          shootingStar = null;
+        } else {
+          const tailX = shootingStar.x - (shootingStar.vx / 15) * shootingStar.length;
+          const tailY = shootingStar.y - (shootingStar.vy / 15) * shootingStar.length;
+          const { r: cr, g: cg, b: cb } = shootingStar.color;
+
+          const grad = ctx.createLinearGradient(tailX, tailY, shootingStar.x, shootingStar.y);
+          grad.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+          grad.addColorStop(0.7, `rgba(${cr}, ${cg}, ${cb}, ${shootingStar.life * 0.5})`);
+          grad.addColorStop(1, `rgba(255, 255, 255, ${shootingStar.life * 0.95})`);
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.8 * shootingStar.life;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(shootingStar.x, shootingStar.y);
+          ctx.stroke();
+
+          // Shooting star head spark
+          ctx.fillStyle = `rgba(255, 255, 255, ${shootingStar.life})`;
+          ctx.beginPath();
+          ctx.arc(shootingStar.x, shootingStar.y, 2 * shootingStar.life, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      animId = requestAnimationFrame(renderStarfield);
+    }
+
+    // IntersectionObserver to pause loop when scrolled out of view
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            if (!isVisible) {
+              isVisible = true;
+              if (!animId) animId = requestAnimationFrame(renderStarfield);
+            }
+          } else {
+            isVisible = false;
+            if (animId) {
+              cancelAnimationFrame(animId);
+              animId = null;
+            }
+          }
+        });
+      }, { threshold: 0.05 });
+      observer.observe(banner);
+    }
+
+    // Start loop
+    animId = requestAnimationFrame(renderStarfield);
+  }
+
   // --- 3D INTERACTIVE PARALLAX TILT & THEATRICAL FOLLOW SPOTLIGHT FOR HERO BANNER ---
   function initHeroParallax() {
     const banner = document.getElementById('hero-campaign-banner-container');
@@ -3046,8 +3534,9 @@ function initApp() {
     }
   }
 
-  // Initialize Hero Interactive Parallax
+  // Initialize Hero Interactive Parallax & 3D Starfield
   initHeroParallax();
+  initHero3DStarfield();
 
   // Initial startup & Hash Route Listener
   handleHashChange();
